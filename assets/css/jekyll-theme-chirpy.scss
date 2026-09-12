@@ -788,7 +788,7 @@ button:focus-visible,
   .sv-tap {
     position: absolute;
     top: 90px;
-    bottom: 170px;
+    bottom: 110px;
     width: 34%;
     z-index: 2;
     cursor: pointer;
@@ -809,7 +809,7 @@ button:focus-visible,
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 90px 30px 165px;
+    padding: 90px 30px 110px;
     z-index: 1;
     text-align: center;
   }
@@ -847,9 +847,9 @@ button:focus-visible,
 
   .sv-cta {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 100px;
+    left: 20px;
+    right: 76px;
+    bottom: 28px;
     display: flex;
     justify-content: center;
     z-index: 3;
@@ -857,6 +857,8 @@ button:focus-visible,
 
   .sv-cta-link {
     display: inline-flex;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     align-items: center;
     gap: 9px;
     background: rgb(255 255 255 / 94%);
@@ -915,22 +917,63 @@ footer a:hover,
 .fmert-like-notice { display: block; margin-top: 8px; color: var(--text-muted-color); }
 #story-viewer .sv-likes {
   position: absolute;
-  bottom: 27px;
-  left: 12px;
-  right: 12px;
+  bottom: 20px;
+  right: 16px;
   text-align: center;
   z-index: 4;
   color: #fff;
 }
-#story-viewer .fmert-like-button { color: #fff; background: #242032; border-color: #b69de9; }
-#story-viewer .fmert-like-button[aria-pressed='true'] { background: #7750c9; }
-#story-viewer .sv-like-notice {
+#story-viewer .fmert-like-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 44px;
+  padding: 6px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 1px 3px rgb(0 0 0 / 45%));
+  }
+
+  &[aria-pressed='true'] svg {
+    fill: #ff4d6d;
+    stroke: #ff4d6d;
+  }
+}
+#story-viewer .fmert-like-count {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+}
+#story-viewer .fmert-like-message:not(.is-error) {
   position: absolute;
-  bottom: 8px;
-  left: 12px;
-  right: 12px;
-  font-size: 10px;
-  text-align: center;
-  color: #ddd;
-  z-index: 4;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+#story-viewer .fmert-like-message.is-error {
+  position: absolute;
+  right: calc(100% + 8px);
+  bottom: 0;
+  width: min(200px, 60vw);
+  text-align: right;
+  text-shadow: 0 1px 3px #000;
 }
