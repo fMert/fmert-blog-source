@@ -24,6 +24,10 @@ services:
     environment:
       STORY_PASSWORD: ${STORY_PASSWORD:?set STORY_PASSWORD in .env}
       DATA_DIR: /data
+      # Caddy is the public entrypoint; this service is bound to loopback only.
+      # Docker forwards its connections with a bridge address, not 127.0.0.1.
+      TRUST_PROXY_HEADERS: "true"
+      BLOG_ORIGIN: http://blog:8080
     volumes: [./data:/data]
     read_only: true
     tmpfs: [/tmp]

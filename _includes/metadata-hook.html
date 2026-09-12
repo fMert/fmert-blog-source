@@ -2,6 +2,11 @@
 {% assign website_id = 'https://fmert.me/#website' %}
 {% assign profile_id = 'https://fmert.me/about/#profilepage' %}
 {% assign image_id = 'https://fmert.me/assets/img/avatar.jpg#image' %}
+<script defer src="{{ '/assets/js/analytics.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/likes.js' | relative_url }}"></script>
+{% if page.layout == 'post' %}
+  <meta name="fmert-post-id" content="{{ page.url | escape }}">
+{% endif %}
 
 {% if page.url == '/' %}
   <script type="application/ld+json">

@@ -63,12 +63,20 @@ type AdminPageData struct {
 	ActiveTab string
 	Stories   []Story
 	Posts     []ManagedPost
+	Analytics AnalyticsSummary
+	Likes     LikesSummary
 }
 
 type app struct {
-	dataDir  string
-	password string
-	mu       sync.Mutex
+	dataDir        string
+	password       string
+	mu             sync.Mutex
+	targetMu       sync.Mutex
+	targets        []LikeTarget
+	targetsUpdated time.Time
+	likeWindows    map[string]likeWindow
+	loginLimiter   requestLimiter
+	visitLimiter   requestLimiter
 }
 
 func main() {
@@ -93,6 +101,9 @@ func main() {
 	mux.HandleFunc("POST /stories-api", a.create)
 	mux.HandleFunc("POST /stories-api/delete", a.delete)
 	mux.HandleFunc("GET /stories-admin", a.admin)
+	mux.HandleFunc("POST /stories-api/analytics/visit", a.recordVisit)
+	mux.HandleFunc("GET /stories-api/likes", a.getLikes)
+	mux.HandleFunc("POST /stories-api/likes", a.setLike)
 	mux.HandleFunc("POST /stories-login", a.login)
 	mux.HandleFunc("POST /stories-logout", a.logout)
 	mux.HandleFunc("POST /stories-api/posts", a.createPost)
@@ -117,6 +128,7 @@ func (a *app) list(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (a *app) admin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	if !a.authorized(r) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		loginPage.Execute(w, r.URL.Query().Has("error"))
@@ -133,11 +145,25 @@ func (a *app) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	activeTab := "stories"
-	if r.URL.Query().Get("tab") == "posts" {
-		activeTab = "posts"
+	if tab := r.URL.Query().Get("tab"); tab == "posts" || tab == "analytics" {
+		activeTab = tab
+	}
+	var analytics AnalyticsSummary
+	var likes LikesSummary
+	if activeTab == "analytics" {
+		analytics, err = a.analyticsSummary()
+		if err != nil {
+			http.Error(w, "Analitik yüklenemedi", http.StatusInternalServerError)
+			return
+		}
+		likes, err = a.likesSummary()
+		if err != nil {
+			http.Error(w, "Beğeniler yüklenemedi", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	adminPage.Execute(w, AdminPageData{ActiveTab: activeTab, Stories: stories, Posts: posts})
+	adminPage.Execute(w, AdminPageData{ActiveTab: activeTab, Stories: stories, Posts: posts, Analytics: analytics, Likes: likes})
 }
 
 func (a *app) create(w http.ResponseWriter, r *http.Request) {
@@ -230,6 +256,11 @@ func (a *app) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if retry := a.loginLimiter.allow(clientIP(r), time.Now(), 5, 100, 15*time.Minute); retry > 0 {
+		tooManyRequests(w, retry)
+		return
+	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if err := r.ParseForm(); err != nil || subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(a.password)) != 1 {
 		http.Redirect(w, r, "/stories-admin?error=1", http.StatusSeeOther)
@@ -755,8 +786,9 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
     .preview-panel{position:sticky;top:92px;padding:18px}.preview-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.preview-label span:last-child{font-weight:600;letter-spacing:0;text-transform:none}.story-preview{position:relative;isolation:isolate;aspect-ratio:9/14.5;overflow:hidden;border-radius:20px;background:linear-gradient(160deg,#171824,#2a2050);box-shadow:0 18px 42px rgba(0,0,0,.35)}.story-preview:after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 30%,rgba(0,0,0,.55))}.preview-image{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover}.preview-image[hidden]{display:none}.progress{position:absolute;top:12px;left:12px;right:12px;height:3px;border-radius:9px;background:rgba(255,255,255,.28);overflow:hidden}.progress:after{content:"";display:block;width:62%;height:100%;background:#fff}.story-head{position:absolute;top:26px;left:14px;right:14px;display:flex;align-items:center;gap:9px}.avatar{width:30px;height:30px;border:2px solid rgba(255,255,255,.85);border-radius:50%;background:url('/assets/img/avatar.jpg') center/cover,#2b2b38}.user{font-size:12px;font-weight:800;text-shadow:0 1px 8px #000}.user small{display:block;color:rgba(255,255,255,.7);font-size:9px;font-weight:600}.badge{margin-left:auto;padding:4px 7px;border:1px solid rgba(255,255,255,.2);border-radius:7px;background:rgba(10,10,15,.28);font-size:8px;font-weight:900;letter-spacing:.1em}.preview-content{position:absolute;left:22px;right:22px;bottom:62px;text-align:center;text-shadow:0 2px 14px rgba(0,0,0,.45)}.preview-content strong{display:block;font-size:25px;line-height:1.12;letter-spacing:-.04em;overflow-wrap:anywhere}.preview-content p{margin:9px 0 0;color:rgba(255,255,255,.77);font-size:11px;line-height:1.45;overflow-wrap:anywhere}.preview-cta{position:absolute;left:22px;right:22px;bottom:18px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(255,255,255,.94);color:#17151f;font-size:11px;font-weight:900}.preview-cta[hidden]{display:none}.preview-tip{margin:12px 3px 0;color:var(--muted-2);font-size:11px;text-align:center}
     .post-workspace{grid-template-columns:minmax(0,1fr) 430px}.markdown-tools{display:flex;flex-wrap:wrap;gap:5px;padding:6px;border:1px solid var(--line);border-bottom:0;border-radius:11px 11px 0 0;background:#101018}.markdown-tool{min-width:34px;height:32px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:#aaa7b8;font-size:12px;font-weight:850;cursor:pointer}.markdown-tool:hover{background:var(--surface-3);color:#fff}.markdown-editor{min-height:450px!important;border-radius:0 0 11px 11px!important;line-height:1.65!important;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace!important;tab-size:2}.metadata-box{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:11px;border:1px solid var(--line-soft);border-radius:12px;background:#101018}.metadata-item{min-width:0}.metadata-item small,.metadata-item strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.metadata-item small{margin-bottom:3px;color:var(--muted-2);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.metadata-item strong{color:#cfccda;font-size:11px}.publish-state{display:none;padding:12px 13px;border:1px solid rgba(128,103,242,.25);border-radius:11px;background:rgba(128,103,242,.08);color:#c8bcff;font-size:12px}.publish-state.show{display:block}.publish-state.success{border-color:rgba(85,214,167,.25);background:rgba(85,214,167,.08);color:#83e5c3}.publish-state.error{border-color:rgba(255,113,135,.25);background:rgba(255,113,135,.08);color:#ffacb9}.publish-state a{color:inherit;font-weight:850}.article-preview{min-height:600px;padding:28px 26px;overflow-wrap:anywhere;border-radius:16px;background:#101018}.article-preview-meta{display:flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}.article-preview-category{padding:4px 7px;border-radius:6px;background:rgba(128,103,242,.13);color:var(--accent-2)}.article-preview h1{margin:0 0 22px;font-size:31px;line-height:1.12;letter-spacing:-.045em}.article-preview-body{color:#c6c3cf;font-size:13px;line-height:1.75}.article-preview-body h2,.article-preview-body h3{margin:26px 0 9px;color:#f2eff9;line-height:1.25;letter-spacing:-.025em}.article-preview-body h2{font-size:20px}.article-preview-body h3{font-size:16px}.article-preview-body p{margin:0 0 14px}.article-preview-body blockquote{margin:16px 0;padding:3px 0 3px 14px;border-left:3px solid var(--accent);color:#aaa7b7}.article-preview-body code{padding:2px 5px;border-radius:5px;background:#20202b;color:#d7cffc;font:11px ui-monospace,SFMono-Regular,Menlo,monospace}.article-preview-body pre{padding:13px;overflow:auto;border:1px solid var(--line);border-radius:9px;background:#09090e}.article-preview-body pre code{padding:0;background:transparent}.article-preview-body a{color:var(--accent-2)}.article-preview-body ul{padding-left:20px}.article-placeholder{color:var(--muted-2)}.post-card{display:flex;align-items:center;gap:13px;padding:13px;border:1px solid var(--line-soft);border-radius:13px;background:#111119;color:inherit;text-decoration:none}.post-card:hover{border-color:#403d54;background:#15151e}.post-icon{flex:0 0 38px;height:38px;display:grid;place-items:center;border-radius:10px;background:rgba(128,103,242,.1);color:var(--accent-2);font-size:17px}.post-card .story-info{flex:1}.post-open{color:var(--muted-2)}
     .library{margin-top:28px;padding:22px}.library-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.story-card{min-width:0;display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px;border:1px solid var(--line-soft);border-radius:14px;background:#111119}.story-thumb{width:58px;aspect-ratio:4/5;border-radius:10px;background:linear-gradient(150deg,#262337,#392b68);background-position:center;background-size:cover}.story-info{min-width:0}.story-info strong,.story-info span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.story-info strong{font-size:12px}.story-info span{margin-top:3px;color:var(--muted);font-size:11px}.story-meta{display:flex;align-items:center;gap:7px;margin-top:5px;color:var(--muted-2);font-size:10px}.story-state{padding:2px 6px;border-radius:99px;background:rgba(85,214,167,.1);color:#75dfba;font-weight:800}.story-state.expired{background:rgba(151,149,166,.1);color:var(--muted)}.delete-form{margin:0}.delete{width:34px;height:34px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--muted-2);cursor:pointer;font-size:17px}.delete:hover{border-color:rgba(255,113,135,.2);background:rgba(255,113,135,.08);color:var(--danger)}.empty{grid-column:1/-1;padding:34px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);text-align:center}.empty strong{display:block;margin-bottom:4px;color:#ccc9d8}.toast{position:fixed;right:20px;bottom:20px;z-index:30;max-width:340px;padding:12px 15px;border:1px solid var(--line);border-radius:12px;background:#20202b;color:#fff;box-shadow:var(--shadow);transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}.toast.show{transform:none;opacity:1}
+    .analytics-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric{padding:20px}.metric strong{display:block;font-size:30px}.metric span{color:var(--muted);font-size:12px}.analytics-table{width:100%;border-collapse:collapse;font-size:12px}.analytics-table th,.analytics-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;overflow-wrap:anywhere}.analytics-table th{color:var(--muted)}.table-wrap{overflow-x:auto}.analytics-note{color:var(--muted);font-size:12px}
     @media(max-width:900px){.workspace{grid-template-columns:1fr}.preview-panel{position:relative;top:auto;max-width:640px;width:100%;margin:auto;grid-row:2}.library-grid{grid-template-columns:1fr 1fr}.topbar-inner{grid-template-columns:auto 1fr auto}.brand small{display:none}.app-tabs{justify-self:center}.article-preview{min-height:420px}}
-    @media(max-width:640px){.topbar-inner{min-height:110px;padding:10px 15px;grid-template-columns:1fr auto;grid-template-rows:auto auto}.brand small,.ghost span{display:none}.app-tabs{grid-column:1/-1;grid-row:2;width:100%}.app-tab{flex:1;min-width:0}.top-actions{grid-column:2;grid-row:1}main{padding:24px 14px 45px}.intro{align-items:start}.intro .status{display:none}h1{font-size:26px}.composer,.library{padding:17px}.workspace{gap:16px}.two-col,.library-grid,.metadata-box{grid-template-columns:1fr}.publish-row{align-items:stretch;flex-direction:column}.publish{width:100%}.story-card{grid-template-columns:52px minmax(0,1fr) auto}.story-thumb{width:52px}.markdown-editor{min-height:360px!important}.article-preview{min-height:360px;padding:21px 18px}.article-preview h1{font-size:26px}}
+    @media(max-width:640px){.topbar-inner{min-height:110px;padding:10px 15px;grid-template-columns:1fr auto;grid-template-rows:auto auto}.brand small,.ghost span{display:none}.app-tabs{grid-column:1/-1;grid-row:2;width:100%}.app-tab{flex:1;min-width:0;padding:0 5px}.top-actions{grid-column:2;grid-row:1}main{padding:24px 14px 45px}.intro{align-items:start}.intro .status{display:none}h1{font-size:26px}.composer,.library{padding:17px}.workspace{gap:16px}.two-col,.library-grid,.metadata-box,.analytics-grid{grid-template-columns:1fr}.publish-row{align-items:stretch;flex-direction:column}.publish{width:100%}.story-card{grid-template-columns:52px minmax(0,1fr) auto}.story-thumb{width:52px}.markdown-editor{min-height:360px!important}.article-preview{min-height:360px;padding:21px 18px}.article-preview h1{font-size:26px}}
   </style>
 </head>
 <body>
@@ -766,6 +798,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       <nav class="app-tabs" aria-label="İçerik türü">
         <a class="app-tab {{if eq .ActiveTab "stories"}}active{{end}}" href="/stories-admin">◉ Hikâyeler</a>
         <a class="app-tab {{if eq .ActiveTab "posts"}}active{{end}}" href="/stories-admin?tab=posts">▤ Yazılar</a>
+        <a class="app-tab {{if eq .ActiveTab "analytics"}}active{{end}}" href="/stories-admin?tab=analytics">◫ Analitik</a>
       </nav>
       <div class="top-actions">
         <a class="ghost" href="/" target="_blank" rel="noopener"><span>Siteyi aç</span> ↗</a>
@@ -775,7 +808,31 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
   </header>
 
   <main>
-    {{if eq .ActiveTab "posts"}}
+    {{if eq .ActiveTab "analytics"}}
+    <section class="intro"><div><p class="eyebrow">Site trafiği</p><h1>Analitik</h1><p class="intro-copy">Son 30 gün · saatler Türkiye saatiyle</p></div></section>
+    <section class="panel library" style="margin:0 0 24px">
+      <div class="section-head"><h2>Beğeniler</h2><span>{{.Likes.Total}} toplam beğeni · tüm zamanlar</span></div>
+      <div class="table-wrap"><table class="analytics-table"><thead><tr><th>İçerik</th><th>Tür</th><th>Beğeni</th></tr></thead><tbody>
+      {{range .Likes.Content}}<tr><td>{{if eq .Kind "post"}}<a href="{{.ID}}">{{.Title}}</a>{{else}}{{.Title}}{{end}}</td><td>{{if eq .Kind "post"}}Yazı{{else}}Hikâye{{end}}</td><td>{{.Count}}</td></tr>
+      {{else}}<tr><td colspan="3">Henüz beğeni yok.</td></tr>{{end}}
+      </tbody></table></div>
+      <details style="margin-top:20px"><summary>Beğenen ziyaretçilerin bilgileri ({{.Likes.Total}})</summary>
+        <p class="analytics-note">Her satır, beğeni anındaki bilgileri gösterir. Aynı IP farklı kişilere ait olabilir. Beğeni geri alındığında bu kayıt silinir.</p>
+        <div class="table-wrap"><table class="analytics-table"><thead><tr><th>Zaman</th><th>İçerik</th><th>Tür</th><th>IP</th><th>Sayfa</th><th>Cihaz</th><th>Tarayıcı</th><th>Kaynak</th></tr></thead><tbody>
+        {{range .Likes.Recent}}<tr><td>{{.Time}}</td><td>{{.Title}}</td><td>{{if eq .Kind "post"}}Yazı{{else}}Hikâye{{end}}</td><td>{{.IP}}</td><td>{{.Path}}</td><td>{{.Device}}</td><td>{{.Browser}}</td><td>{{.Referrer}}</td></tr>
+        {{else}}<tr><td colspan="8">Henüz beğeni yok.</td></tr>{{end}}
+        </tbody></table></div>
+      </details>
+    </section>
+    <div class="analytics-grid">
+      <div class="panel metric"><strong>{{.Analytics.Views}}</strong><span>Sayfa görüntüleme</span></div>
+      <div class="panel metric"><strong>{{.Analytics.UniqueIPs}}</strong><span>Farklı IP (kişi sayısı değildir)</span></div>
+      <div class="panel metric"><strong>{{.Analytics.Today}}</strong><span>Bugünkü görüntüleme</span></div>
+    </div>
+    <section class="panel library"><div class="section-head"><h2>En çok görüntülenen sayfalar</h2></div><div class="table-wrap"><table class="analytics-table"><thead><tr><th>Sayfa</th><th>Görüntüleme</th></tr></thead><tbody>{{range .Analytics.Pages}}<tr><td>{{.Name}}</td><td>{{.Count}}</td></tr>{{else}}<tr><td colspan="2">Henüz veri yok</td></tr>{{end}}</tbody></table></div></section>
+    <section class="panel library"><div class="section-head"><h2>Cihazlar ve kaynaklar</h2></div><div class="analytics-grid"><div><h3>Cihaz</h3>{{range .Analytics.Devices}}<p>{{.Name}} · {{.Count}}</p>{{end}}</div><div><h3>Tarayıcı</h3>{{range .Analytics.Browsers}}<p>{{.Name}} · {{.Count}}</p>{{end}}</div><div><h3>Yönlendiren site</h3>{{range .Analytics.Referrers}}<p>{{.Name}} · {{.Count}}</p>{{end}}</div></div></section>
+    <section class="panel library"><div class="section-head"><h2>Son görüntülemeler</h2><span>En yeni 100 kayıt</span></div><div class="table-wrap"><table class="analytics-table"><thead><tr><th>Zaman</th><th>IP</th><th>Sayfa</th><th>Cihaz</th><th>Tarayıcı</th><th>Kaynak</th></tr></thead><tbody>{{range .Analytics.Recent}}<tr><td>{{.Time}}</td><td>{{.IP}}</td><td>{{.Path}}</td><td>{{.Device}}</td><td>{{.Browser}}</td><td>{{.Referrer}}</td></tr>{{else}}<tr><td colspan="6">Henüz görüntüleme yok</td></tr>{{end}}</tbody></table></div><p class="analytics-note">Veriler bu özellik yayına alındıktan sonra başlar. IP ve tarayıcı bilgileri yaklaşık olabilir; reklam engelleyiciler ve JavaScript kapalı tarayıcılar sayılmaz. Kayıtlar 30 gün saklanır.</p></section>
+    {{else if eq .ActiveTab "posts"}}
     <section class="intro">
       <div><p class="eyebrow">Yeni blog yazısı</p><h1>Markdown ile yaz, tek dokunuşla yayınla</h1><p class="intro-copy">Tarih, bağlantı, kategori ve etiketler içeriğine göre otomatik hazırlanır.</p></div>
       <div class="status"><span class="status-dot"></span> Yazı servisi hazır</div>
@@ -1022,7 +1079,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       syncPreview();
     })();
   </script>
-  {{else}}
+  {{else if eq .ActiveTab "stories"}}
   <script>
     (function(){
       'use strict';

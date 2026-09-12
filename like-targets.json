@@ -1,0 +1,13 @@
+---
+layout: null
+permalink: /like-targets.json
+---
+[
+{% for post in site.posts %}
+  {"kind":"post","id":{{ post.url | jsonify }},"title":{{ post.title | jsonify }}}{% unless forloop.last %},{% endunless %}
+{% endfor %}
+{% if site.posts.size > 0 and site.data.stories.size > 0 %},{% endif %}
+{% for story in site.data.stories %}
+  {"kind":"story","id":{{ story.id | jsonify }},"title":{{ story.title | default: story.text | jsonify }}}{% unless forloop.last %},{% endunless %}
+{% endfor %}
+]

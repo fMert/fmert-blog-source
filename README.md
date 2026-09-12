@@ -12,7 +12,28 @@ Personal blog of **Furkan Mert Bağcı** — posts about my projects (Queyntisen
 
 - **Violet reskin** — the entire theme is recolored through CSS custom properties in `assets/css/jekyll-theme-chirpy.scss`. Both light and dark modes work; the theme's own toggle is untouched.
 - **Stories** — an Instagram-style "Hikayeler" row on the homepage with a fullscreen viewer (progress bars, auto-advance, tap zones, keyboard navigation). Vanilla JS, no dependencies.
-- **Content studio** — the password-protected `/stories-admin` panel has separate Stories and Posts tabs. Posts can be written in Markdown with a live preview; dates, slugs, categories, and tags are generated automatically without an external AI API.
+- **Content studio** — the password-protected `/stories-admin` panel has Stories, Posts, and Analytics tabs. Posts can be written in Markdown with a live preview; dates, slugs, categories, and tags are generated automatically without an external AI API.
+- **First-party analytics** — the Analytics tab shows the last 30 days of page views, distinct IPs, popular pages, device/browser categories, referrer domains, and recent visits. Data starts when the tracker is deployed; it is stored in the persistent `deploy/data/analytics/` directory and older daily files are removed when the dashboard is opened. Do Not Track and Global Privacy Control are respected. Counts exclude browsers that block or disable the tracker; IPs do not identify individuals.
+- **Likes** — stories and post pages have a like/unlike button and a public count. The Analytics tab shows every current like with its timestamp, content, IP, page, device/browser category, and referrer domain. These are snapshots of the like request, not a person's browsing history. Only the authenticated admin can see these details. Likes and their snapshots persist in `deploy/data/likes/` until undone; their retention is separate from the 30-day page-view window. A signed, first-party, HttpOnly cookie remembers likes for one year and is created on the first like. Clearing cookies or using another browser allows another like; this is not an identity system. The like button remains usable when passive analytics are disabled by DNT/GPC.
+
+The like service validates content against live stories and Jekyll's generated
+`/like-targets.json`. Rebuild both `blog` and `stories` containers to enable it.
+`BLOG_ORIGIN` defaults to the internal `http://blog:8080`; set it to your Jekyll
+server when running the Go service locally. The like cookie requires HTTPS.
+`TRUST_PROXY_HEADERS=true` is set only in the deployment where Caddy is the
+entrypoint and the Go service's published port is bound to loopback. Do not expose
+that port directly to the internet with this setting enabled.
+
+Abuse protection limits `/stories-login` to 5 attempts per IP and 100 attempts
+across all IPs per 15 minutes. Analytics submissions are limited to 60 per IP
+and 600 across all IPs per minute, and require a matching `Origin` header.
+Throttled requests return HTTP 429 with `Retry-After`. These request limits reset
+when the service restarts. Analytics log files have an additional 10 MiB daily
+and 100 MiB total storage budget, checked against the files on disk so restarting
+cannot bypass it. When a storage budget is full, new analytics submissions return
+HTTP 503 until space is available; existing records are not deleted by this check.
+Page-view counts can therefore omit traffic above these limits, and accepted
+requests are still not proof of a human visit.
 
 ## Stories
 

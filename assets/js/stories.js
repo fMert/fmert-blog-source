@@ -135,6 +135,9 @@
     var card = visible[idx];
     var d = card.dataset;
     canvas.dataset.type = d.type;
+    if (window.FmertLikes) {
+      window.FmertLikes.mount($('.sv-likes'), 'story', d.id, function () { setPaused(true); });
+    }
 
     var img = $('.sv-img');
     var scrim = $('.sv-img-scrim');

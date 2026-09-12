@@ -85,6 +85,36 @@ func TestAdminPostsTabIncludesMarkdownEditor(t *testing.T) {
 	}
 }
 
+func TestAnalyticsVisitAndProtectedTab(t *testing.T) {
+	a := &app{dataDir: t.TempDir(), password: "secret"}
+	r := httptest.NewRequest("POST", "/stories-api/analytics/visit", strings.NewReader(`{"path":"/posts/example/","referrer":"https://example.org/article"}`))
+	r.RemoteAddr = "127.0.0.1:1234"
+	r.Header.Set("Origin", "http://example.com")
+	r.Header.Set("X-Forwarded-For", "198.51.100.12")
+	r.Header.Set("User-Agent", "Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile Safari/604.1")
+	w := httptest.NewRecorder()
+	a.recordVisit(w, r)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("visit returned %d: %s", w.Code, w.Body.String())
+	}
+	summary, err := a.analyticsSummary()
+	if err != nil || summary.Views != 1 || summary.UniqueIPs != 1 || summary.Recent[0].IP != "198.51.100.12" || summary.Devices[0].Name != "Mobil" {
+		t.Fatalf("unexpected analytics: %+v, %v", summary, err)
+	}
+	adminRequest := httptest.NewRequest("GET", "/stories-admin?tab=analytics", nil)
+	w = httptest.NewRecorder()
+	a.admin(w, adminRequest)
+	if strings.Contains(w.Body.String(), "198.51.100.12") {
+		t.Fatal("IP shown without authentication")
+	}
+	adminRequest.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+	w = httptest.NewRecorder()
+	a.admin(w, adminRequest)
+	if !strings.Contains(w.Body.String(), "198.51.100.12") || !strings.Contains(w.Body.String(), "En çok görüntülenen") {
+		t.Fatal("analytics tab missing visit data")
+	}
+}
+
 func TestInferPostMetadata(t *testing.T) {
 	metadata := inferPostMetadata("Python ile yapay zekâ uygulaması", "Linux üzerinde bir API ve LLM projesi geliştirdim.")
 	if metadata.Slug != "python-ile-yapay-zeka-uygulamasi" {

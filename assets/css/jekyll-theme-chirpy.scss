@@ -336,6 +336,20 @@ button:focus-visible,
     }
   }
 
+  .sidebar-no-facebook {
+    display: block;
+    width: calc(100% - 3rem);
+    max-width: 240px;
+    margin: 0 auto 2rem;
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+  }
+
   /* Bottom buttons incl. the light/dark toggle */
   .sidebar-bottom {
     a,
@@ -774,7 +788,7 @@ button:focus-visible,
   .sv-tap {
     position: absolute;
     top: 90px;
-    bottom: 110px;
+    bottom: 170px;
     width: 34%;
     z-index: 2;
     cursor: pointer;
@@ -795,7 +809,7 @@ button:focus-visible,
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 90px 30px 100px;
+    padding: 90px 30px 165px;
     z-index: 1;
     text-align: center;
   }
@@ -835,7 +849,7 @@ button:focus-visible,
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 26px;
+    bottom: 100px;
     display: flex;
     justify-content: center;
     z-index: 3;
@@ -874,4 +888,49 @@ footer a:hover,
 #search-results a:hover {
   color: var(--accent) !important;
   border-bottom-color: var(--accent) !important;
+}
+
+/* Story and post likes */
+.fmert-like-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fmert-like-button[aria-pressed='true'] {
+  color: #fff;
+  background: #7750c9;
+}
+.fmert-like-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.fmert-like-button:disabled { opacity: .6; cursor: wait; }
+.fmert-like-message { display: block; font-size: 12px; min-height: 18px; margin-top: 3px; }
+.fmert-post-likes { margin: 24px 0; }
+.fmert-like-notice { display: block; margin-top: 8px; color: var(--text-muted-color); }
+#story-viewer .sv-likes {
+  position: absolute;
+  bottom: 27px;
+  left: 12px;
+  right: 12px;
+  text-align: center;
+  z-index: 4;
+  color: #fff;
+}
+#story-viewer .fmert-like-button { color: #fff; background: #242032; border-color: #b69de9; }
+#story-viewer .fmert-like-button[aria-pressed='true'] { background: #7750c9; }
+#story-viewer .sv-like-notice {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  font-size: 10px;
+  text-align: center;
+  color: #ddd;
+  z-index: 4;
 }

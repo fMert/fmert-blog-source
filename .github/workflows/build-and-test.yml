@@ -42,4 +42,4 @@ jobs:
             \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
 
       - name: Test story publisher
-        run: go test story-admin/main.go story-admin/main_test.go
+        run: go test -race story-admin/*.go
