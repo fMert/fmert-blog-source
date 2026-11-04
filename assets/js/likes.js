@@ -4,7 +4,8 @@
   // Serialize changes so that the first like's browser cookie is established
   // before a second item is liked. The server makes repeated requests idempotent.
   var mutations = Promise.resolve();
-  var notice = 'Beğeniyle birlikte IP, zaman, sayfa, cihaz/tarayıcı ve yönlendiren site bilgileri site sahibine görünür.';
+  var t = window.FmertI18n;
+  var notice = t.like_notice;
 
   function mount(host, kind, id, onInteract) {
     host.replaceChildren();
@@ -14,7 +15,7 @@
     button.className = 'fmert-like-button';
     button.setAttribute('aria-pressed', 'false');
     button.disabled = true;
-    button.setAttribute('aria-label', 'Beğen');
+    button.setAttribute('aria-label', t.like);
     var countLabel;
     if (isStory) {
       button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>';
@@ -24,7 +25,7 @@
       countLabel.textContent = '—';
       button.append(countLabel);
     } else {
-      button.textContent = '♡ Beğen';
+      button.textContent = '♡ ' + t.like;
       button.title = notice;
     }
     var message = document.createElement('span');
@@ -44,8 +45,8 @@
       count = state.count;
       button.setAttribute('aria-pressed', String(liked));
       if (isStory) countLabel.textContent = count;
-      else button.textContent = (liked ? '♥ Beğendin' : '♡ Beğen') + ' · ' + count;
-      button.setAttribute('aria-label', (liked ? 'Beğeniyi geri al' : 'Beğen') + ', ' + count + ' beğeni');
+      else button.textContent = (liked ? '♥ ' + t.liked : '♡ ' + t.like) + ' · ' + count;
+      button.setAttribute('aria-label', (liked ? t.unlike : t.like) + ', ' + t.like_count.replace('{count}', count));
     }
 
     function read(response) {
@@ -55,7 +56,7 @@
 
     fetch('/stories-api/likes?' + new URLSearchParams({kind: kind, id: id}), {cache: 'no-store', credentials: 'same-origin'})
       .then(read).then(paint)
-      .catch(function () { showMessage('Beğeni sayısı yüklenemedi.', true); })
+      .catch(function () { showMessage(t.like_load_failed, true); })
       .finally(function () { button.disabled = false; });
 
     button.addEventListener('click', function (event) {
@@ -70,9 +71,9 @@
           body: JSON.stringify({kind: kind, id: id, liked: !liked, referrer: document.referrer})
         }).then(read).then(function (state) {
           paint(state);
-          showMessage(state.liked ? 'Beğenin kaydedildi.' : 'Beğenin geri alındı.');
+          showMessage(state.liked ? t.like_saved : t.like_removed);
         }).catch(function () {
-          showMessage('Kaydedilemedi. Tekrar dene.', true);
+          showMessage(t.like_save_failed, true);
         }).finally(function () { button.disabled = false; });
       });
     });
@@ -84,7 +85,7 @@
   if (post && tail) {
     var section = document.createElement('section');
     section.className = 'fmert-post-likes';
-    section.setAttribute('aria-label', 'Yazıyı beğen');
+    section.setAttribute('aria-label', t.post_like);
     var host = document.createElement('div');
     var info = document.createElement('small');
     info.className = 'fmert-like-notice';

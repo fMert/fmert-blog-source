@@ -1,54 +1,26 @@
 #!/usr/bin/env bash
-#
-# Run jekyll serve and then launch the site
+set -euo pipefail
 
-prod=false
-command="bundle exec jekyll s -l"
-host="127.0.0.1"
+source_dir=$(cd "$(dirname "$0")/.." && pwd)
+host=127.0.0.1
+production=false
 
 help() {
-  echo "Usage:"
-  echo
-  echo "   bash /path/to/run [options]"
-  echo
-  echo "Options:"
-  echo "     -H, --host [HOST]    Host to bind to."
-  echo "     -p, --production     Run Jekyll in 'production' mode."
-  echo "     -h, --help           Print this help information."
+  echo "Usage: bash tools/run.sh [-H HOST] [-p]"
+  echo "  -H, --host        Host to bind to (default: 127.0.0.1)"
+  echo "  -p, --production  Build in production mode"
 }
 
 while (($#)); do
-  opt="$1"
-  case $opt in
-  -H | --host)
-    host="$2"
-    shift 2
-    ;;
-  -p | --production)
-    prod=true
-    shift
-    ;;
-  -h | --help)
-    help
-    exit 0
-    ;;
-  *)
-    echo -e "> Unknown option: '$opt'\n"
-    help
-    exit 1
-    ;;
+  case "$1" in
+    -H | --host) host="$2"; shift 2 ;;
+    -p | --production) production=true; shift ;;
+    -h | --help) help; exit 0 ;;
+    *) help; exit 1 ;;
   esac
 done
 
-command="$command -H $host"
-
-if $prod; then
-  command="JEKYLL_ENV=production $command"
-fi
-
-if [ -e /proc/1/cgroup ] && grep -q docker /proc/1/cgroup; then
-  command="$command --force_polling"
-fi
-
-echo -e "\n> $command\n"
-eval "$command"
+cd "$source_dir"
+if $production; then export JEKYLL_ENV=production; fi
+bash tools/build-languages.sh _site
+python3 -m http.server 4000 --bind "$host" --directory _site

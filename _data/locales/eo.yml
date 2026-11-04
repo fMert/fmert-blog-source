@@ -1,0 +1,66 @@
+layout:
+  post: Afiŝo
+  category: Kategorio
+  tag: Etikedo
+tabs:
+  home: Hejmo
+  categories: Kategorioj
+  tags: Etikedoj
+  archives: Arkivo
+  about: Pri mi
+search:
+  hint: Serĉi
+  cancel: Nuligi
+  no_results: Neniu rezulto trovita.
+panel:
+  lastmod: Lastatempe ĝisdatigitaj
+  trending_tags: Popularaj etikedoj
+  toc: Enhavo
+copyright:
+  license:
+    template: Ĉi tiu afiŝo estas licencita laŭ :LICENSE_NAME de la aŭtoro.
+    name: CC BY 4.0
+    link: https://creativecommons.org/licenses/by/4.0/deed.eo
+  brief: Kelkaj rajtoj rezervitaj.
+  verbose: >-
+    Krom se alie indikite, la afiŝoj en ĉi tiu retejo estas licencitaj
+    laŭ la Internacia Permesilo Krea Komunaĵo Atribuite 4.0 (CC BY 4.0).
+meta: Kreita per :PLATFORM kaj la etoso :THEME.
+not_found:
+  statement: Pardonu, tiu paĝo ne ekzistas aŭ ĝia adreso ŝanĝiĝis.
+notification:
+  update_found: Nova versio de la enhavo disponeblas.
+  update: Ĝisdatigi
+post:
+  written_by: De
+  posted: Publikigita
+  updated: Ĝisdatigita
+  words: vortoj
+  pageview_measure: vidoj
+  read_time:
+    unit: min
+    prompt: legado
+  relate_posts: Plia legado
+  share: Kunhavigi
+  button:
+    next: Pli nova
+    previous: Pli malnova
+    copy_code:
+      succeed: Kopiita!
+    share_link:
+      title: Kopii ligilon
+      succeed: Ligilo kopiita!
+df:
+  post:
+    strftime: "%e %b %Y"
+    dayjs: "D MMM YYYY"
+  archives:
+    strftime: "%b"
+    dayjs: "MMM"
+categories:
+  category_measure:
+    singular: kategorio
+    plural: kategorioj
+  post_measure:
+    singular: afiŝo
+    plural: afiŝoj

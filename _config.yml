@@ -7,7 +7,7 @@ theme: jekyll-theme-chirpy
 # The language of the webpage › http://www.lingoes.net/en/translator/langcode.htm
 # If it has the same name as one of the files in folder `_data/locales`, the layout language will also be changed,
 # otherwise, the layout language will use the default value of 'en'.
-lang: tr-TR
+lang: eo
 
 # Change to your timezone › https://zones.arilyn.cc
 timezone: Europe/Istanbul
@@ -17,10 +17,10 @@ timezone: Europe/Istanbul
 
 title: Furkan Mert Bağcı # the main title
 
-tagline: fMert’in kişisel yazılım günlüğü # it will display as the subtitle
+tagline: La persona programada blogo de fMert # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
-  Furkan Mert Bağcı’nın (fMert) yazılım, Linux, açık kaynak, yapay zekâ ve kişisel projeler üzerine yazdığı kişisel blog.
+  La persona blogo de Furkan Mert Bağcı pri programado, Linukso, libera programaro, artefarita inteligenteco kaj propraj projektoj.
 
 # Fill in the protocol & hostname for your site.
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
@@ -220,6 +220,7 @@ exclude:
   - deploy
   - story-admin
   - design_handoff_blog_stories
+  - i18n
   - README.md
   - LICENSE
   - purgecss.js

@@ -1,0 +1,93 @@
+<!-- The Top Bar -->
+
+<header id="topbar-wrapper" class="flex-shrink-0" aria-label="Top Bar">
+  <div
+    id="topbar"
+    class="d-flex align-items-center justify-content-between px-lg-3 h-100"
+  >
+    <nav id="breadcrumb" aria-label="Breadcrumb">
+      {% assign paths = page.url | split: '/' %}
+
+      {% if paths.size == 0 or page.layout == 'home' %}
+        <!-- index page -->
+        <span>{{ site.data.locales[include.lang].tabs.home | capitalize }}</span>
+
+      {% else %}
+        {% for item in paths %}
+          {% if forloop.first %}
+            <span>
+              <a href="{{ '/' | relative_url }}">
+                {{- site.data.locales[include.lang].tabs.home | capitalize -}}
+              </a>
+            </span>
+
+          {% elsif forloop.last %}
+            {% if page.collection == 'tabs' %}
+              <span>{{ site.data.locales[include.lang].tabs[item] | default: page.title }}</span>
+            {% else %}
+              <span>{{ page.title }}</span>
+            {% endif %}
+
+          {% elsif page.layout == 'category' or page.layout == 'tag' %}
+            <span>
+              <a href="{{ item | append: '/' | relative_url }}">
+                {{- site.data.locales[include.lang].tabs[item] | default: page.title -}}
+              </a>
+            </span>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </nav>
+    <!-- endof #breadcrumb -->
+
+    <button type="button" id="sidebar-trigger" class="btn btn-link" aria-label="Sidebar">
+      <i class="fas fa-bars fa-fw"></i>
+    </button>
+
+    <div id="topbar-title">
+      {% if page.layout == 'home' %}
+        {{- site.data.locales[include.lang].title | default: site.title -}}
+      {% elsif page.collection == 'tabs' or page.layout == 'page' %}
+        {%- capture tab_key -%}{{ page.url | split: '/' }}{%- endcapture -%}
+        {{- site.data.locales[include.lang].tabs[tab_key] | default: page.title -}}
+      {% else %}
+        {{- site.data.locales[include.lang].layout[page.layout] | default: page.layout | capitalize -}}
+      {% endif %}
+    </div>
+
+    {% assign switch_path = page.url %}
+    {% if page.layout == 'category' or page.layout == 'tag' %}{% assign switch_path = '/' %}{% endif %}
+    {% assign eo_target = switch_path %}
+    {% assign en_target = '/en' | append: switch_path %}
+    {% assign tr_target = '/tr' | append: switch_path %}
+    {% if page.layout == 'category' or page.layout == 'tag' %}
+      {% if site.lang == 'eo' %}{% assign eo_target = page.url %}{% endif %}
+      {% if site.lang == 'en' %}{% assign en_target = '/en' | append: page.url %}{% endif %}
+      {% if site.lang == 'tr-TR' %}{% assign tr_target = '/tr' | append: page.url %}{% endif %}
+    {% endif %}
+    <nav class="language-switcher" aria-label="{{ site.data.ui[include.lang].language_label }}">
+      <a href="{{ eo_target }}" hreflang="eo" aria-label="Esperanto"{% if site.lang == 'eo' %} aria-current="page"{% endif %}><img src="{{ '/assets/img/flag-eo.svg' | relative_url }}" alt=""></a>
+      <a href="{{ en_target }}" hreflang="en" aria-label="English"{% if site.lang == 'en' %} aria-current="page"{% endif %}><img src="{{ '/assets/img/flag-en.svg' | relative_url }}" alt=""></a>
+      <a href="{{ tr_target }}" hreflang="tr" aria-label="Türkçe"{% if site.lang == 'tr-TR' %} aria-current="page"{% endif %}><img src="{{ '/assets/img/flag-tr.svg' | relative_url }}" alt=""></a>
+    </nav>
+
+    <button type="button" id="search-trigger" class="btn btn-link" aria-label="{{ site.data.ui[include.lang].search }}">
+      <i class="fas fa-search fa-fw"></i>
+    </button>
+
+    <search id="search" class="align-items-center ms-3 ms-lg-0">
+      <i class="fas fa-search fa-fw"></i>
+      <input
+        class="form-control"
+        id="search-input"
+        type="search"
+        aria-label="search"
+        autocomplete="off"
+        placeholder="{{ site.data.locales[include.lang].search.hint | capitalize }}..."
+      >
+    </search>
+    <button type="button" class="btn btn-link text-decoration-none" id="search-cancel">
+      {{- site.data.locales[include.lang].search.cancel -}}
+    </button>
+  </div>
+</header>

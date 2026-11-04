@@ -1,94 +1,94 @@
 ---
-title: Queyntisen Artık Bir Obsidian Alternatifi
+title: Queyntisen nun estas alternativo al Obsidian
 date: 2026-06-18 01:20:00 +0300
-categories: [Proje]
-tags: [queyntisen, markdown, obsidian, terminal, yapay-zeka, python, acik-kaynak]
+categories: [Projekto]
+tags: [queyntisen, markdown, obsidian, terminalo, artefarita-inteligenteco, python, libera-programaro]
 ---
 
-Yaklaşık dört ay önce Python ile çok basit bir terminal editörü yazmıştım: **Queyntisen**.
+Antaŭ ĉirkaŭ kvar monatoj mi verkis tre simplan terminalan redaktilon en Python: **Queyntisen**.
 
-O zamanlar fikir çok küçüktü. Terminalde çalışan, Markdown dosyalarını açabilen, biraz Vim hissi veren, sağ tarafta da basit bir AI paneli olan deneysel bir editör. Çalışıyordu ama dürüst olmak gerekirse daha çok "hafta sonu projesi" gibiydi. Sonra projeye uzun süre dokunmadım.
+Tiam la ideo estis eta. Ĝi estis eksperimenta redaktilo funkcianta en la terminalo, kapabla malfermi Markdown-dosierojn, kun iom da Vim-sento kaj simpla AI-panelo dekstre. Ĝi funkciis, sed sincere aspektis pli kiel semajnfina projekto. Poste mi longe ne tuŝis ĝin.
 
-Son günlerde Queyntisen'i yeniden açtım ve AI yardımıyla projeyi inanılmaz derecede ileri taşıdım. Artık sadece basit bir terminal editörü değil; Markdown notları için ciddi ciddi kullanılabilecek, AI destekli, terminal-native bir çalışma alanına dönüşmeye başladı.
+Lastatempe mi remalfermis Queyntisen kaj, kun helpo de AI, multe progresigis la projekton. Ĝi ne plu estas nur simpla terminala redaktilo: ĝi iĝas AI-helpata, terminala laborspaco vere uzebla por Markdown-notoj.
 
-![Queyntisen Ekran Görüntüsü](https://raw.githubusercontent.com/fMert/Queyntisen/main/screenshot.png)
+![Ekrankopio de Queyntisen](https://raw.githubusercontent.com/fMert/Queyntisen/main/screenshot.png)
 
-## Obsidian'a Terminalden Bir Alternatif
+## Terminala alternativo al Obsidian
 
-Obsidian çok güçlü bir uygulama. Markdown tabanlı olması, notları düz dosya olarak saklaması ve plugin ekosistemi sayesinde birçok kişi için vazgeçilmez hale geldi. Ama benim için her zaman küçük bir problem vardı: Obsidian sonuçta Electron tabanlı bir masaüstü uygulaması.
+Obsidian estas tre potenca programo. Ĝia Markdown-bazo, konservado de notoj kiel simplaj dosieroj kaj aldonaĵa ekosistemo faras ĝin nemalhavebla por multaj. Sed por mi ĉiam estis malgranda problemo: Obsidian estas labortabla programo bazita sur Electron.
 
-Ben günümün büyük kısmını terminalde geçiriyorum. Kod yazarken, not alırken, dosya düzenlerken sürekli terminaldeyim. Bir notu düzenlemek için ayrı bir GUI uygulamasına geçmek bana hep biraz fazla geldi.
+Mi pasigas grandan parton de la tago en la terminalo. Tie mi programas, notas kaj redaktas dosierojn. Ŝanĝi al aparta grafika programo por redakti noton ĉiam ŝajnis tro multe.
 
-Queyntisen tam burada devreye giriyor.
+Tie Queyntisen utilas.
 
-Queyntisen, Obsidian'ın sevdiğim tarafını — Markdown dosyalarıyla çalışma fikrini — alıp terminale taşıyor. Ama bunu sadece "terminalde açılan basit bir metin editörü" olarak yapmıyor. Varsayılan olarak Markdown dosyasını güzel bir preview görünümünde açıyor. İstediğin zaman `Ctrl-E` ile ham Markdown düzenleme moduna geçebiliyorsun.
+Queyntisen prenas tion, kion mi ŝatas en Obsidian — laboron kun Markdown-dosieroj — kaj portas ĝin al la terminalo. Sed ĝi ne estas nur simpla tekstredaktilo. Defaŭlte ĝi malfermas Markdown-dosieron en bela antaŭrigardo. Per `Ctrl-E` oni povas iam ajn ŝanĝi al redaktado de la kruda Markdown-fonto.
 
-Yani okurken temiz ve düzenli bir not görünümü, yazarken doğrudan kaynak Markdown kontrolü var.
+Do dum legado vi havas puran, ordigitan noton, kaj dum verkado rektan kontrolon de la fonto.
 
-## Neden Bana Göre Daha İyi?
+## Kial ĝi pli taŭgas por mi?
 
-Burada "daha iyi" derken herkes için mutlak bir iddia atmıyorum. Obsidian devasa bir ekosistem. Ama benim kullanım şeklim için Queyntisen daha doğru bir yere oturuyor.
+Mi ne asertas, ke ĝi estas absolute "pli bona" por ĉiuj. Obsidian havas grandegan ekosistemon. Sed por mia laborstilo Queyntisen pli bone kongruas.
 
-Birincisi, terminalde çalışıyor. Electron yok, ağır arayüz yok, fareyle pencere arama yok. Klavyeden çıkmadan notu aç, oku, düzenle, kaydet.
+Unue, ĝi funkcias en la terminalo. Sen Electron, sen peza interfaco, sen serĉado de fenestro per muso. Vi povas malfermi, legi, redakti kaj konservi noton sen forlasi la klavaron.
 
-İkincisi, AI sonradan eklenmiş bir plugin gibi değil. Queyntisen'in merkezinde AI var. Obsidian'da AI kullanmak istediğinde genelde plugin arıyorsun, ayar yapıyorsun, başka paneller açıyorsun, bazen dış araçlarla uğraşıyorsun. Queyntisen'de ise sağ tarafta doğrudan bir AI paneli var.
+Due, AI ne estas poste aldonita aldonaĵo. Ĝi estas kerna parto de Queyntisen. Por uzi AI en Obsidian oni kutime serĉas aldonaĵon, ĝustigas agordojn, malfermas panelojn kaj foje uzas eksterajn ilojn. En Queyntisen AI-panelo jam troviĝas dekstre.
 
-`Ctrl-W` ile AI paneline geçiyorsun, isteğini yazıyorsun, Enter'a basıyorsun. Queyntisen mevcut Markdown dosyasının tamamını bağlam olarak modele gönderiyor. Model notu baştan düzenlenmiş şekilde geri döndürüyor ve sonuç doğrudan editör buffer'ına uygulanıyor.
+Per `Ctrl-W` vi ŝanĝas al la AI-panelo, skribas peton kaj premas Enter. Queyntisen sendas la tutan aktualan Markdown-dosieron al la modelo kiel kuntekston. La modelo redonas reorganizitan noton, kaj la rezulto estas aplikata rekte al la redaktila bufro.
 
-Notu toparlatmak, başlıklandırmak, yapılacaklar listesine çevirmek, toplantı notu formatına sokmak, daha kısa ve net hale getirmek gibi işler için bu akış çok doğal hissettiriyor.
+Tiu fluo estas natura por ordigi noton, aldoni titolojn, krei taskoliston, formati kunvenajn notojn aŭ fari tekston pli mallonga kaj klara.
 
-## AI Entegrasyonu Nasıl Çalışıyor?
+## Kiel funkcias la AI-integriĝo?
 
-Queyntisen'in AI tarafı özellikle Markdown yazımı için tasarlandı. Sağ paneldeki asistan, açık olan notun tamamını görüyor. Bu önemli, çünkü modele sadece seçili birkaç satırı değil, belgenin bütün bağlamını veriyorsun.
+La AI-parto de Queyntisen estas speciale desegnita por Markdown-verkado. La asistanto en la dekstra panelo vidas la tutan malfermitan noton. Tio gravas, ĉar la modelo ricevas la kuntekston de la tuta dokumento, ne nur kelkajn elektitajn liniojn.
 
-Örneğin şöyle bir şey yazabiliyorsun:
-
-```text
-Bu notu daha düzenli bir proje planına çevir.
-```
-
-Ya da:
+Ekzemple vi povas skribi:
 
 ```text
-Başlıkları düzelt, tekrar eden yerleri temizle ve aksiyon maddelerini task list yap.
+Transformu ĉi tiun noton en pli ordigitan projektplanon.
 ```
 
-Model, belgenin tamamını okuyup daha iyi organize edilmiş bir Markdown dokümanı üretiyor. Queyntisen de bu çıktıyı mevcut buffer'a uyguluyor.
+Aŭ:
 
-Bunun güzel tarafı şu: AI isteği arka planda çalışıyor. Editör tamamen donup kalmıyor. Ayrıca sağlayıcı ayarları da artık editörün içinde yapılabiliyor.
+```text
+Korektu la titolojn, forigu ripetojn kaj faru taskoliston el la agopunktoj.
+```
 
-`:setup` komutuyla provider seçiyorsun. OpenAI, Anthropic, DeepSeek, OpenRouter, LM Studio, Ollama ve diğer OpenAI uyumlu endpoint'ler destekleniyor. Yerel model kullanmak istersen LM Studio veya Ollama ile çalışabiliyor. API tabanlı model kullanmak istersen onu da aynı menüden ayarlayabiliyorsun.
+La modelo legas la tutan dokumenton kaj produktas pli bone organizitan Markdown-dosieron. Queyntisen aplikas tiun eliron al la nuna bufro.
 
-`:model` komutuyla da kullanılabilir modelleri gezip seçebiliyorsun. Seçimler `~/.config/queyntisen/config.json` altında saklanıyor.
+La bela afero estas, ke la AI-peto funkcias fone. La redaktilo ne tute frostiĝas. Oni nun povas ankaŭ agordi provizantojn interne de la redaktilo.
 
-## Markdown Preview Artık Ciddi Seviyede
+Per la komando `:setup` vi elektas provizanton. Subtenataj estas OpenAI, Anthropic, DeepSeek, OpenRouter, LM Studio, Ollama kaj aliaj OpenAI-kongruaj servoj. Por loka modelo vi povas uzi LM Studio aŭ Ollama; por reta modelo vi agordas ĝin en la sama menuo.
 
-İlk sürümde Queyntisen daha çok ham metin düzenleme tarafına yakındı. Şimdi ise Markdown preview tarafı çok daha kullanışlı.
+Per `:model` vi povas esplori kaj elekti disponeblajn modelojn. La elektoj estas konservataj en `~/.config/queyntisen/config.json`.
 
-Desteklenen şeylerden bazıları:
+## Markdown-antaŭrigardo nun vere utilas
 
-- başlıklar,
-- paragraflar,
-- madde listeleri,
-- numaralı listeler,
-- task list'ler,
-- alıntılar,
-- yatay çizgiler,
-- fenced code block'lar,
-- inline code,
-- bold / italic / strikethrough,
-- linkler,
-- görseller,
-- autolink'ler,
-- tablolar.
+La unua versio de Queyntisen estis pli proksima al redaktado de kruda teksto. Nun la Markdown-antaŭrigardo estas multe pli kapabla.
 
-Bu, Queyntisen'i sadece "dosya açıp yazı yazılan" bir araç olmaktan çıkarıyor. Terminalde not okuma deneyimi de gerçekten hoş hale geliyor.
+Ĝi subtenas interalie:
 
-## Modal Düzenleme ve Komutlar
+- titolojn,
+- alineojn,
+- punktolistojn,
+- numeritajn listojn,
+- taskolistojn,
+- citaĵojn,
+- horizontalajn liniojn,
+- kodblokojn kun bariloj,
+- enlinian kodon,
+- grasan, kursivan kaj trastrekitan tekston,
+- ligilojn,
+- bildojn,
+- aŭtomatajn ligilojn,
+- tabelojn.
 
-Queyntisen hâlâ Vim'den esinlenen modal bir yapıya sahip. Source modunda normal mod ve insert mod var. `hjkl` ile gezinme, `dd` ile satır silme, `yy` ile satır kopyalama, `p` ile yapıştırma, `u` ile geri alma gibi alışıldık hareketler bulunuyor.
+Tiel Queyntisen estas pli ol ilo por malfermi kaj redakti dosierojn. Legi notojn en la terminalo ankaŭ fariĝis agrabla.
 
-Komut tarafında da temel şeyler var:
+## Reĝima redaktado kaj komandoj
+
+Queyntisen plu uzas reĝimojn inspiritajn de Vim. En fonta reĝimo estas normala kaj eniga reĝimoj. La konataj movoj funkcias: `hjkl` por navigi, `dd` por forigi linion, `yy` por kopii, `p` por alglui kaj `u` por malfari.
+
+La bazaj komandoj estas:
 
 ```text
 :w
@@ -99,21 +99,21 @@ Komut tarafında da temel şeyler var:
 :model
 ```
 
-Ayrıca `:` komut satırında `Tab` ile autocomplete çalışıyor. Küçük bir detay gibi görünüyor ama terminal editöründe çok iyi hissettiriyor.
+En la komandlinio `:`, `Tab` ankaŭ kompletigas komandojn. Eta detalo, sed tre agrabla en terminala redaktilo.
 
-## Dört Ay Sonra AI ile Geri Dönmek
+## Reveni kun AI post kvar monatoj
 
-Bence bu projenin en ilginç tarafı sadece Queyntisen'in kendisi değil, geliştirme süreci.
+La plej interesa parto de la projekto por mi estas ne nur Queyntisen mem, sed ankaŭ ĝia disvolvado.
 
-Dört ay önce bunu Python ile süper temel bir editör olarak yazdım. Sonra kenarda kaldı. Yakın zamanda tekrar açtığımda eski haline baktım ve "buradan gerçekten güzel bir şey çıkabilir" dedim.
+Antaŭ kvar monatoj mi verkis ĝin kiel tre bazan Python-eksperimenton kaj poste flankenmetis ĝin. Kiam mi lastatempe remalfermis ĝin, mi ekvidis ke el ĝi povus kreski io vere bona.
 
-Bu noktada AI, sadece editörün içindeki bir özellik olmadı; geliştirme sürecinin de parçası oldu. Kodun yapısını iyileştirmek, Markdown rendering tarafını genişletmek, setup menüsü eklemek, model seçimini toparlamak, README'yi yeniden yazmak, kurulum akışını daha düzgün hale getirmek gibi işlerde AI ciddi şekilde hız kazandırdı.
+AI tiam iĝis ne nur funkcio en la redaktilo, sed parto de la disvolva procezo. Ĝi multe akcelis plibonigon de la koda strukturo, vastigon de la Markdown-bildigo, aldonon de agorda menuo kaj modelo-elekto, reverkon de la README kaj poluradon de la instalado.
 
-Eskiden tek dosyalık basit bir deneme olan şey, şimdi gerçekten kurulabilir, kullanılabilir ve anlatılabilir bir açık kaynak projeye dönüştü.
+La antaŭa unudosiera provo fariĝis instalebla, uzebla kaj prezentebla libera projekto.
 
-## Kurulum
+## Instalado
 
-Denemek için:
+Por provi ĝin:
 
 ```bash
 git clone https://github.com/fMert/Queyntisen.git
@@ -122,27 +122,27 @@ chmod +x install.sh
 ./install.sh
 ```
 
-Kurulumdan sonra terminali yeniden başlatıp şöyle çalıştırabilirsin:
+Post instalado remalfermu la terminalon kaj rulu:
 
 ```bash
 queyntisen notes.md
 ```
 
-Manuel çalıştırmak istersen:
+Por mana lanĉo:
 
 ```bash
 pip install -r requirements.txt
 python3 editor.py notes.md
 ```
 
-## Sonuç
+## Konkludo
 
-Queyntisen hâlâ genç bir proje. Obsidian kadar büyük bir ekosistemi yok, plugin pazarı yok, mobil uygulaması yok. Ama benim için çok net bir avantajı var: tam olarak benim çalışma şeklime uyuyor.
+Queyntisen ankoraŭ estas juna projekto. Ĝi ne havas la grandan ekosistemon, aldonaĵan merkaton aŭ poŝtelefonan programon de Obsidian. Sed por mi ĝi havas klaran avantaĝon: ĝi kongruas kun mia labormaniero.
 
-Terminalde kalıyor. Markdown'ı merkeze alıyor. AI entegrasyonunu sonradan yamalanmış bir özellik gibi değil, ana akışın parçası olarak sunuyor.
+Ĝi restas en la terminalo, metas Markdown en la centron kaj traktas AI kiel kernan parton de la laborfluo, ne kiel poste algluitan aldonaĵon.
 
-Eğer notlarını Markdown olarak tutmayı seviyorsan, Obsidian fikrini seviyor ama Electron tabanlı büyük bir masaüstü uygulaması yerine terminalde çalışan daha hafif ve AI-native bir şey istiyorsan, Queyntisen tam olarak bu boşluğu doldurmayı hedefliyor.
+Se vi ŝatas konservi notojn kiel Markdown, ŝatas la ideon de Obsidian sed preferas malpezan, terminalan kaj AI-centran ilon al granda Electron-programo, Queyntisen celas plenigi ĝuste tiun bezonon.
 
-Kaynak kodu burada:
+La fontkodo estas ĉi tie:
 
 [github.com/fMert/Queyntisen](https://github.com/fMert/Queyntisen)

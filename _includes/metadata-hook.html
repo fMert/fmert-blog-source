@@ -1,7 +1,14 @@
+{% include lang.html %}
 {% assign person_id = 'https://fmert.me/#person' %}
 {% assign website_id = 'https://fmert.me/#website' %}
 {% assign profile_id = 'https://fmert.me/about/#profilepage' %}
 {% assign image_id = 'https://fmert.me/assets/img/avatar.jpg#image' %}
+{% unless page.layout == 'category' or page.layout == 'tag' %}
+<link rel="alternate" hreflang="eo" href="{{ site.url }}{{ page.url }}">
+<link rel="alternate" hreflang="en" href="{{ site.url }}/en{{ page.url }}">
+<link rel="alternate" hreflang="tr" href="{{ site.url }}/tr{{ page.url }}">
+{% endunless %}
+<script>window.FmertI18n = {{ site.data.ui[lang] | jsonify }};</script>
 <script defer src="{{ '/assets/js/analytics.js' | relative_url }}"></script>
 <script defer src="{{ '/assets/js/likes.js' | relative_url }}"></script>
 {% if page.layout == 'post' %}

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	_ "embed"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -22,20 +23,30 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 )
 
+//go:embed admin-i18n.js
+var adminI18nJS []byte
+
 type Story struct {
-	ID        string `json:"id"`
-	Type      string `json:"type"`
-	Image     string `json:"image,omitempty"`
-	BG        string `json:"bg,omitempty"`
+	ID           string                      `json:"id"`
+	Type         string                      `json:"type"`
+	Image        string                      `json:"image,omitempty"`
+	BG           string                      `json:"bg,omitempty"`
+	Title        string                      `json:"title,omitempty"`
+	Text         string                      `json:"text"`
+	Subtext      string                      `json:"subtext,omitempty"`
+	Link         string                      `json:"link,omitempty"`
+	LinkLabel    string                      `json:"link_label,omitempty"`
+	Posted       string                      `json:"posted"`
+	Translations map[string]StoryTranslation `json:"translations,omitempty"`
+}
+
+type StoryTranslation struct {
 	Title     string `json:"title,omitempty"`
 	Text      string `json:"text"`
 	Subtext   string `json:"subtext,omitempty"`
-	Link      string `json:"link,omitempty"`
 	LinkLabel string `json:"link_label,omitempty"`
-	Posted    string `json:"posted"`
 }
 
 type ManagedPost struct {
@@ -101,6 +112,11 @@ func main() {
 	mux.HandleFunc("POST /stories-api", a.create)
 	mux.HandleFunc("POST /stories-api/delete", a.delete)
 	mux.HandleFunc("GET /stories-admin", a.admin)
+	mux.HandleFunc("GET /stories-i18n.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		w.Write(adminI18nJS)
+	})
 	mux.HandleFunc("POST /stories-api/analytics/visit", a.recordVisit)
 	mux.HandleFunc("GET /stories-api/likes", a.getLikes)
 	mux.HandleFunc("POST /stories-api/likes", a.setLike)
@@ -116,19 +132,57 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8081", mux))
 }
 
-func (a *app) list(w http.ResponseWriter, _ *http.Request) {
+func (a *app) list(w http.ResponseWriter, r *http.Request) {
 	stories, err := a.load()
 	if err != nil {
 		http.Error(w, "Hikâyeler yüklenemedi", http.StatusInternalServerError)
 		return
 	}
+	stories = localizedStories(stories, r.URL.Query().Get("lang"))
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(stories)
 }
 
+func localizedStories(stories []Story, lang string) []Story {
+	if lang != "en" && lang != "tr" {
+		lang = "eo"
+	}
+	result := make([]Story, 0, len(stories))
+	for _, story := range stories {
+		if story.Translations == nil {
+			if lang == "tr" {
+				result = append(result, story)
+			}
+			continue
+		}
+		if lang != "eo" {
+			translation, ok := story.Translations[lang]
+			if !ok || translation.Text == "" {
+				continue
+			}
+			story.Title, story.Text, story.Subtext, story.LinkLabel = translation.Title, translation.Text, translation.Subtext, translation.LinkLabel
+			if strings.HasPrefix(story.Link, "/") && !strings.HasPrefix(story.Link, "/en/") && !strings.HasPrefix(story.Link, "/tr/") {
+				story.Link = "/" + lang + story.Link
+			}
+		}
+		story.Translations = nil
+		result = append(result, story)
+	}
+	return result
+}
+
 func (a *app) admin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
+	lang := r.URL.Query().Get("lang")
+	if lang != "eo" && lang != "en" && lang != "tr" {
+		if cookie, err := r.Cookie("fmert_admin_lang"); err == nil {
+			lang = cookie.Value
+		}
+	}
+	if lang != "en" && lang != "tr" {
+		lang = "eo"
+	}
 	if !a.authorized(r) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		loginPage.Execute(w, r.URL.Query().Has("error"))
@@ -139,7 +193,8 @@ func (a *app) admin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Hikâyeler yüklenemedi", http.StatusInternalServerError)
 		return
 	}
-	posts, err := a.loadManagedPosts()
+	stories = localizedStories(stories, lang)
+	posts, err := a.loadManagedPosts(lang)
 	if err != nil {
 		http.Error(w, "Yazılar yüklenemedi", http.StatusInternalServerError)
 		return
@@ -186,10 +241,21 @@ func (a *app) create(w http.ResponseWriter, r *http.Request) {
 		Link:      strings.TrimSpace(r.FormValue("link")),
 		LinkLabel: strings.TrimSpace(r.FormValue("link_label")),
 		Posted:    time.Now().UTC().Format(time.RFC3339),
+		Translations: map[string]StoryTranslation{
+			"en": {Title: strings.TrimSpace(r.FormValue("title_en")), Text: strings.TrimSpace(r.FormValue("text_en")), Subtext: strings.TrimSpace(r.FormValue("subtext_en")), LinkLabel: strings.TrimSpace(r.FormValue("link_label_en"))},
+			"tr": {Title: strings.TrimSpace(r.FormValue("title_tr")), Text: strings.TrimSpace(r.FormValue("text_tr")), Subtext: strings.TrimSpace(r.FormValue("subtext_tr")), LinkLabel: strings.TrimSpace(r.FormValue("link_label_tr"))},
+		},
 	}
 	if err := validate(s); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	for _, language := range []string{"en", "tr"} {
+		translation := s.Translations[language]
+		if err := validate(Story{Type: s.Type, Text: translation.Text, Title: translation.Title, Subtext: translation.Subtext, LinkLabel: translation.LinkLabel}); err != nil {
+			http.Error(w, "Her dilde metin gereklidir", http.StatusBadRequest)
+			return
+		}
 	}
 	s.ID = newID()
 
@@ -219,6 +285,9 @@ func (a *app) create(w http.ResponseWriter, r *http.Request) {
 		err = a.saveUnlocked(stories)
 	}
 	if err != nil {
+		if s.Image != "" {
+			_ = os.Remove(filepath.Join(a.dataDir, "media", filepath.Base(s.Image)))
+		}
 		http.Error(w, "Hikâye kaydedilemedi", http.StatusInternalServerError)
 		return
 	}
@@ -239,10 +308,11 @@ func (a *app) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	kept := stories[:0]
+	var image string
 	for _, s := range stories {
 		if s.ID == id {
 			if strings.HasPrefix(s.Image, "/story-media/") {
-				os.Remove(filepath.Join(a.dataDir, "media", filepath.Base(s.Image)))
+				image = filepath.Join(a.dataDir, "media", filepath.Base(s.Image))
 			}
 			continue
 		}
@@ -251,6 +321,11 @@ func (a *app) delete(w http.ResponseWriter, r *http.Request) {
 	if err := a.saveUnlocked(kept); err != nil {
 		http.Error(w, "Hikâye silinemedi", http.StatusInternalServerError)
 		return
+	}
+	if image != "" {
+		if err := os.Remove(image); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Printf("hikâye görseli silinemedi: %v", err)
+		}
 	}
 	http.Redirect(w, r, "/stories-admin", http.StatusSeeOther)
 }
@@ -347,6 +422,11 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 	}
 	title := strings.TrimSpace(r.FormValue("title"))
 	body := strings.TrimSpace(r.FormValue("body"))
+	translations := map[string]struct{ title, body string }{
+		"eo": {title, body},
+		"en": {strings.TrimSpace(r.FormValue("title_en")), strings.TrimSpace(r.FormValue("body_en"))},
+		"tr": {strings.TrimSpace(r.FormValue("title_tr")), strings.TrimSpace(r.FormValue("body_tr"))},
+	}
 	if title == "" || len([]rune(title)) > 160 {
 		http.Error(w, "Başlık zorunludur ve en fazla 160 karakter olabilir", http.StatusBadRequest)
 		return
@@ -355,8 +435,17 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Markdown içeriği zorunludur ve en fazla 200.000 karakter olabilir", http.StatusBadRequest)
 		return
 	}
+	for _, language := range []string{"en", "tr"} {
+		post := translations[language]
+		if post.title == "" || len([]rune(post.title)) > 160 || post.body == "" || len([]rune(post.body)) > 200000 {
+			http.Error(w, "Her dilde başlık ve içerik gereklidir", http.StatusBadRequest)
+			return
+		}
+	}
 
 	metadata := inferPostMetadata(title, body)
+	category := inferPostMetadata(translations["tr"].title, translations["tr"].body).Category
+	metadata.Category = localizedCategory(category, "eo")
 	now := time.Now().In(time.FixedZone("Europe/Istanbul", 3*60*60))
 	datePrefix := now.Format("2006-01-02")
 	postsDir := a.postsDir()
@@ -367,7 +456,13 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	filename := failedPostFilename(postsDir, title, body)
+	primaryDir := filepath.Join(postsDir, "eo")
+	if err := os.MkdirAll(primaryDir, 0755); err != nil {
+		http.Error(w, "Yazı dizini oluşturulamadı", http.StatusInternalServerError)
+		return
+	}
+	filename := failedPostFilename(primaryDir, title, body)
+	newPost := filename == ""
 	if filename == "" {
 		var err error
 		filename, err = uniquePostFilename(postsDir, datePrefix, metadata.Slug)
@@ -376,22 +471,43 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	titleJSON, _ := json.Marshal(title)
-	content := fmt.Sprintf("---\ntitle: %s\ndate: %s\ncategories: %s\ntags: %s\nrender_with_liquid: false\n---\n\n%s\n",
-		titleJSON,
-		now.Format("2006-01-02 15:04:05 -0700"),
-		yamlStringList([]string{metadata.Category}),
-		yamlStringList(metadata.Tags),
-		body,
-	)
-	tmp := filepath.Join(postsDir, "."+filename+".tmp")
-	if err := os.WriteFile(tmp, []byte(content), 0644); err != nil {
-		http.Error(w, "Yazı kaydedilemedi", http.StatusInternalServerError)
-		return
+	queued := false
+	var temporaryFiles []string
+	defer func() {
+		for _, path := range temporaryFiles {
+			_ = os.Remove(path)
+		}
+		if !queued && newPost {
+			for _, language := range []string{"eo", "en", "tr"} {
+				_ = os.Remove(filepath.Join(postsDir, language, filename))
+			}
+		}
+	}()
+	for _, language := range []string{"eo", "en", "tr"} {
+		post := translations[language]
+		dir := filepath.Join(postsDir, language)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			http.Error(w, "Yazı dizini oluşturulamadı", http.StatusInternalServerError)
+			return
+		}
+		postMetadata := inferPostMetadata(post.title, post.body)
+		localized := localizedCategory(category, language)
+		titleJSON, _ := json.Marshal(post.title)
+		content := fmt.Sprintf("---\ntitle: %s\ndate: %s\ncategories: %s\ntags: %s\nrender_with_liquid: false\n---\n\n%s\n",
+			titleJSON, now.Format("2006-01-02 15:04:05 -0700"), yamlStringList([]string{localized}), yamlStringList(postMetadata.Tags), post.body)
+		tmp := filepath.Join(dir, "."+filename+".tmp")
+		temporaryFiles = append(temporaryFiles, tmp)
+		if err := os.WriteFile(tmp, []byte(content), 0644); err != nil {
+			http.Error(w, "Yazı kaydedilemedi", http.StatusInternalServerError)
+			return
+		}
 	}
-	if err := os.Rename(tmp, filepath.Join(postsDir, filename)); err != nil {
-		http.Error(w, "Yazı yayın kuyruğuna alınamadı", http.StatusInternalServerError)
-		return
+	for _, language := range []string{"eo", "en", "tr"} {
+		dir := filepath.Join(postsDir, language)
+		if err := os.Rename(filepath.Join(dir, "."+filename+".tmp"), filepath.Join(dir, filename)); err != nil {
+			http.Error(w, "Yazı yayın kuyruğuna alınamadı", http.StatusInternalServerError)
+			return
+		}
 	}
 	status := PostPublishStatus{State: "queued", File: filename, Message: "Yazı yayın kuyruğunda", Updated: time.Now().UTC().Format(time.RFC3339)}
 	if err := writeJSONAtomic(filepath.Join(postsDir, ".publish-status"), status); err != nil {
@@ -399,9 +515,13 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := os.WriteFile(filepath.Join(postsDir, ".publish-trigger"), []byte(filename+"\n"), 0644); err != nil {
+		status.State = "failed"
+		status.Message = "Yayın işlemi başlatılamadı"
+		_ = writeJSONAtomic(filepath.Join(postsDir, ".publish-status"), status)
 		http.Error(w, "Yayın işlemi başlatılamadı", http.StatusInternalServerError)
 		return
 	}
+	queued = true
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(struct {
@@ -410,6 +530,19 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 		URL      string       `json:"url"`
 		Metadata PostMetadata `json:"metadata"`
 	}{true, filename, postURL(filename), metadata})
+}
+
+func localizedCategory(category, language string) string {
+	categories := map[string]map[string]string{
+		"Genel":     {"eo": "Ĝenerala", "en": "General", "tr": "Genel"},
+		"Proje":     {"eo": "Projekto", "en": "Project", "tr": "Proje"},
+		"Araştırma": {"eo": "Esploro", "en": "Research", "tr": "Araştırma"},
+		"Yazılım":   {"eo": "Programado", "en": "Software", "tr": "Yazılım"},
+	}
+	if labels, ok := categories[category]; ok {
+		return labels[language]
+	}
+	return category
 }
 
 func (a *app) postMetadata(w http.ResponseWriter, r *http.Request) {
@@ -422,8 +555,12 @@ func (a *app) postMetadata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "İçerik okunamadı", http.StatusBadRequest)
 		return
 	}
+	metadata := inferPostMetadata(r.FormValue("title"), r.FormValue("body"))
+	if lang := r.FormValue("lang"); lang == "eo" || lang == "en" || lang == "tr" {
+		metadata.Category = localizedCategory(inferPostMetadata(r.FormValue("title_tr"), r.FormValue("body_tr")).Category, lang)
+	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	json.NewEncoder(w).Encode(inferPostMetadata(r.FormValue("title"), r.FormValue("body")))
+	json.NewEncoder(w).Encode(metadata)
 }
 
 func (a *app) postStatus(w http.ResponseWriter, r *http.Request) {
@@ -445,38 +582,49 @@ func (a *app) postStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func (a *app) loadManagedPosts() ([]ManagedPost, error) {
-	entries, err := os.ReadDir(a.postsDir())
-	if errors.Is(err, os.ErrNotExist) {
-		return []ManagedPost{}, nil
+func (a *app) loadManagedPosts(lang string) ([]ManagedPost, error) {
+	posts := []ManagedPost{}
+	dirs := []string{filepath.Join(a.postsDir(), lang)}
+	if lang == "tr" {
+		dirs = append(dirs, a.postsDir())
 	}
-	if err != nil {
-		return nil, err
-	}
-	posts := make([]ManagedPost, 0, len(entries))
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+	for _, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
-		b, err := os.ReadFile(filepath.Join(a.postsDir(), entry.Name()))
 		if err != nil {
 			return nil, err
 		}
-		post := ManagedPost{File: entry.Name(), URL: postURL(entry.Name())}
-		for _, line := range strings.Split(string(b), "\n") {
-			switch {
-			case strings.HasPrefix(line, "title: "):
-				_ = json.Unmarshal([]byte(strings.TrimPrefix(line, "title: ")), &post.Title)
-			case strings.HasPrefix(line, "date: "):
-				post.Date = strings.TrimPrefix(line, "date: ")
-			case strings.HasPrefix(line, "categories: ["):
-				post.Category = strings.TrimSuffix(strings.TrimPrefix(line, "categories: ["), "]")
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+				continue
 			}
-			if line == "---" && post.Title != "" {
-				break
+			b, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				return nil, err
 			}
+			post := ManagedPost{File: entry.Name(), URL: postURL(entry.Name())}
+			if lang == "tr" {
+				post.URL = "/tr" + post.URL
+			} else if lang == "en" {
+				post.URL = "/en" + post.URL
+			}
+			for _, line := range strings.Split(string(b), "\n") {
+				switch {
+				case strings.HasPrefix(line, "title: "):
+					_ = json.Unmarshal([]byte(strings.TrimPrefix(line, "title: ")), &post.Title)
+				case strings.HasPrefix(line, "date: "):
+					post.Date = strings.TrimPrefix(line, "date: ")
+				case strings.HasPrefix(line, "categories: ["):
+					post.Category = strings.TrimSuffix(strings.TrimPrefix(line, "categories: ["), "]")
+				}
+				if line == "---" && post.Title != "" {
+					break
+				}
+			}
+			posts = append(posts, post)
 		}
-		posts = append(posts, post)
 	}
 	sort.Slice(posts, func(i, j int) bool { return posts[i].File > posts[j].File })
 	return posts, nil
@@ -572,12 +720,12 @@ func normalizedText(value string) string {
 
 func slugify(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
-	replacer := strings.NewReplacer("ç", "c", "ğ", "g", "ı", "i", "ö", "o", "ş", "s", "ü", "u", "â", "a", "î", "i", "û", "u")
+	replacer := strings.NewReplacer("ç", "c", "ğ", "g", "ı", "i", "ö", "o", "ş", "s", "ü", "u", "â", "a", "î", "i", "û", "u", "ĉ", "c", "ĝ", "g", "ĥ", "h", "ĵ", "j", "ŝ", "s", "ŭ", "u")
 	value = replacer.Replace(value)
 	var b strings.Builder
 	dash := false
 	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || unicode.IsDigit(r) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
 			b.WriteRune(r)
 			dash = false
 		} else if b.Len() > 0 && !dash {
@@ -595,21 +743,28 @@ func slugify(value string) string {
 	return slug
 }
 
-func uniquePostFilename(dir, datePrefix, slug string) (string, error) {
+func uniquePostFilename(postsDir, datePrefix, slug string) (string, error) {
 	base := datePrefix + "-" + slug
 	filename := base + ".md"
 	for i := 2; ; i++ {
-		if _, err := os.Stat(filepath.Join(dir, filename)); errors.Is(err, os.ErrNotExist) {
+		available := true
+		for _, language := range []string{"", "eo", "en", "tr"} {
+			if _, err := os.Stat(filepath.Join(postsDir, language, filename)); err == nil {
+				available = false
+				break
+			} else if !errors.Is(err, os.ErrNotExist) {
+				return "", err
+			}
+		}
+		if available {
 			return filename, nil
-		} else if err != nil {
-			return "", err
 		}
 		filename = fmt.Sprintf("%s-%d.md", base, i)
 	}
 }
 
 func failedPostFilename(dir, title, body string) string {
-	b, err := os.ReadFile(filepath.Join(dir, ".publish-status"))
+	b, err := os.ReadFile(filepath.Join(filepath.Dir(dir), ".publish-status"))
 	if err != nil {
 		return ""
 	}
@@ -735,6 +890,7 @@ var loginPage = template.Must(template.New("login").Parse(`<!doctype html>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>İçerik stüdyosu · Giriş</title>
+  <script src="/stories-i18n.js"></script>
   <style>
     :root{--bg:#0b0b11;--surface:#15151f;--surface-2:#1d1d29;--line:#2b2b3a;--text:#f5f3ff;--muted:#9896a8;--accent:#8067f2;--accent-2:#a68cff;--danger:#ff788b}
     *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0,rgba(128,103,242,.14),transparent 38%),var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -776,6 +932,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>İçerik stüdyosu</title>
+  <script src="/stories-i18n.js"></script>
   <style>
     :root{--bg:#0b0b11;--surface:#14141d;--surface-2:#1a1a25;--surface-3:#20202d;--line:#2b2b3a;--line-soft:#232330;--text:#f5f3ff;--muted:#9795a6;--muted-2:#747283;--accent:#8067f2;--accent-2:#a78fff;--success:#55d6a7;--danger:#ff7187;--shadow:0 22px 70px rgba(0,0,0,.28)}
     *{box-sizing:border-box}[hidden]{display:none!important}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 48% -15%,rgba(128,103,242,.12),transparent 34%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button,a{-webkit-tap-highlight-color:transparent}.topbar{position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(43,43,58,.82);background:rgba(11,11,17,.86);backdrop-filter:blur(18px)}.topbar-inner{max-width:1180px;min-height:68px;margin:auto;padding:0 22px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px}.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.015em}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(145deg,var(--accent-2),#6448e7);box-shadow:0 9px 25px rgba(100,72,231,.25)}.brand small{display:block;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.02em}.app-tabs{display:flex;gap:4px;padding:4px;border:1px solid var(--line-soft);border-radius:12px;background:#101018}.app-tab{min-width:100px;height:36px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 14px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:12px;font-weight:800}.app-tab:hover{color:#fff}.app-tab.active{background:var(--surface-3);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22)}.top-actions{justify-self:end;display:flex;align-items:center;gap:8px}.ghost,.logout{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:#cbc8d8;text-decoration:none;font-weight:700;cursor:pointer}.logout{width:38px;padding:0;color:var(--muted)}.logout-form{margin:0}.ghost:hover,.logout:hover{border-color:#45435a;color:#fff}
@@ -861,6 +1018,10 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
               <textarea class="control markdown-editor" id="post-body" name="body" required maxlength="200000" spellcheck="true" placeholder="# Giriş&#10;&#10;Yazını Markdown formatında buraya yaz…"></textarea>
             </span>
           </label>
+          <label class="field"><span class="label">English · title</span><input class="control" name="title_en" required maxlength="160" placeholder="English title"></label>
+          <label class="field"><span class="label">English · Markdown</span><textarea class="control markdown-editor" name="body_en" required maxlength="200000" placeholder="Write the complete English translation here."></textarea></label>
+          <label class="field"><span class="label">Türkçe · başlık</span><input class="control" name="title_tr" required maxlength="160" placeholder="Türkçe başlık"></label>
+          <label class="field"><span class="label">Türkçe · Markdown</span><textarea class="control markdown-editor" name="body_tr" required maxlength="200000" placeholder="Türkçe çevirinin tamamını buraya yaz."></textarea></label>
           <div class="metadata-box" aria-live="polite">
             <div class="metadata-item"><small>Tarih</small><strong id="post-date">Bugün · otomatik</strong></div>
             <div class="metadata-item"><small>Kategori</small><strong id="post-category">Genel</strong></div>
@@ -922,6 +1083,8 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
             <span class="label-row"><span class="label">Ana metin</span><span class="counter"><b id="text-count">0</b>/1000</span></span>
             <textarea class="control" id="text" name="text" required maxlength="1000" placeholder="Ne paylaşmak istiyorsun?"></textarea>
           </label>
+          <label class="field"><span class="label">English · main text</span><textarea class="control" name="text_en" required maxlength="1000" placeholder="What would you like to share?"></textarea></label>
+          <label class="field"><span class="label">Türkçe · ana metin</span><textarea class="control" name="text_tr" required maxlength="1000" placeholder="Ne paylaşmak istiyorsun?"></textarea></label>
 
           <div class="field" data-types="image" hidden>
             <span class="label">Fotoğraf</span>
@@ -944,7 +1107,11 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
 
           <div class="two-col" data-types="link" hidden>
             <label class="field"><span class="label">Bağlantı</span><input class="control" id="link" name="link" placeholder="/posts/… veya https://…"></label>
-            <label class="field"><span class="label">Düğme metni</span><input class="control" id="link-label" name="link_label" maxlength="80" value="Aç"></label>
+            <label class="field"><span class="label">Düğme metni (Esperanto)</span><input class="control" id="link-label" name="link_label" maxlength="80" value="Malfermi"></label>
+          </div>
+          <div class="two-col" data-types="link" hidden>
+            <label class="field"><span class="label">Button label (English)</span><input class="control" name="link_label_en" maxlength="80" value="Open"></label>
+            <label class="field"><span class="label">Düğme metni (Türkçe)</span><input class="control" name="link_label_tr" maxlength="80" value="Aç"></label>
           </div>
 
           <details>
@@ -952,6 +1119,12 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
             <div class="two-col">
               <label class="field"><span class="label-row"><span class="label">Kart başlığı</span><span class="optional">İsteğe bağlı</span></span><input class="control" id="title" name="title" maxlength="120" placeholder="Ana sayfadaki kısa başlık"></label>
               <label class="field"><span class="label-row"><span class="label">Alt metin</span><span class="optional">İsteğe bağlı</span></span><input class="control" id="subtext" name="subtext" maxlength="1000" placeholder="Kısa bir açıklama"></label>
+            </div>
+            <div class="two-col">
+              <label class="field"><span class="label">Card title (English)</span><input class="control" name="title_en" maxlength="120"></label>
+              <label class="field"><span class="label">Subtitle (English)</span><input class="control" name="subtext_en" maxlength="1000"></label>
+              <label class="field"><span class="label">Kart başlığı (Türkçe)</span><input class="control" name="title_tr" maxlength="120"></label>
+              <label class="field"><span class="label">Alt metin (Türkçe)</span><input class="control" name="subtext_tr" maxlength="1000"></label>
             </div>
             <label class="field" data-types="text,link"><span class="label">Özel CSS arka planı</span><input class="control" id="bg" name="bg" maxlength="500" value="linear-gradient(160deg, #171824, #30215c)"></label>
           </details>
@@ -1037,16 +1210,20 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
         flushParagraph();closeList();if(inCode)html.push('</code></pre>');return html.join('');
       }
       function syncPreview(){
-        var titleValue=title.value.trim();
+        var language=window.adminLang,translatedTitle=language==='en'?form.elements.title_en:language==='tr'?form.elements.title_tr:title;
+        var translatedBody=language==='en'?form.elements.body_en:language==='tr'?form.elements.body_tr:body;
+        var titleValue=(translatedTitle.value||title.value).trim();
         document.getElementById('post-preview-title').textContent=titleValue||'Yazının başlığı';
-        document.getElementById('post-preview-body').innerHTML=renderMarkdown(body.value);
+        document.getElementById('post-preview-body').innerHTML=renderMarkdown(translatedBody.value||body.value);
         document.getElementById('post-title-count').textContent=title.value.length;
         document.getElementById('post-body-count').textContent=body.value.length.toLocaleString('tr-TR');
-        try{localStorage.setItem(draftKey,JSON.stringify({title:title.value,body:body.value}))}catch(e){}
+        try{localStorage.setItem(draftKey,JSON.stringify(Object.fromEntries(new FormData(form))))}catch(e){}
         clearTimeout(metadataTimer);metadataTimer=setTimeout(loadMetadata,450);
       }
       function loadMetadata(){
-        var values=new URLSearchParams();values.set('title',title.value);values.set('body',body.value);
+        var language=window.adminLang,translatedTitle=language==='en'?form.elements.title_en:language==='tr'?form.elements.title_tr:title;
+        var translatedBody=language==='en'?form.elements.body_en:language==='tr'?form.elements.body_tr:body;
+        var values=new URLSearchParams();values.set('title',translatedTitle.value||title.value);values.set('body',translatedBody.value||body.value);values.set('title_tr',form.elements.title_tr.value||title.value);values.set('body_tr',form.elements.body_tr.value||body.value);values.set('lang',language);
         fetch('/stories-api/posts/metadata',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:values.toString()})
           .then(function(response){if(!response.ok)throw new Error();return response.json()})
           .then(function(data){document.getElementById('post-category').textContent=data.category;document.getElementById('post-preview-category').textContent=data.category;document.getElementById('post-tags').textContent=(data.tags||[]).join(', ')||'İçeriğe göre'})
@@ -1063,8 +1240,8 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
         }).catch(function(){setTimeout(function(){pollStatus(file,url,attempt+1)},1500)});
       }
 
-      try{var draft=JSON.parse(localStorage.getItem(draftKey)||'null');if(draft){title.value=draft.title||'';body.value=draft.body||''}}catch(e){}
-      document.getElementById('post-preview-date').textContent=new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+      try{var draft=JSON.parse(localStorage.getItem(draftKey)||'null');if(draft)Object.keys(draft).forEach(function(name){if(form.elements[name])form.elements[name].value=draft[name]||''})}catch(e){}
+      document.getElementById('post-preview-date').textContent=new Date().toLocaleDateString(window.adminLang==='eo'?'eo':window.adminLang==='en'?'en-GB':'tr-TR',{day:'numeric',month:'long',year:'numeric'});
       form.addEventListener('input',function(){error.classList.remove('show');syncPreview()});
       document.querySelectorAll('.markdown-tool').forEach(function(button){button.addEventListener('click',function(){
         var start=body.selectionStart,end=body.selectionEnd,before=button.dataset.before.split('\\n').join('\n'),after=button.dataset.after.split('\\n').join('\n'),selected=body.value.slice(start,end);
@@ -1073,7 +1250,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       form.addEventListener('submit',function(event){
         event.preventDefault();error.classList.remove('show');state.className='publish-state';publish.disabled=true;publish.textContent='Kaydediliyor…';
         fetch(form.action,{method:'POST',body:new URLSearchParams(new FormData(form))}).then(function(response){if(!response.ok)return response.text().then(function(message){throw new Error(message.trim())});return response.json()}).then(function(data){
-          try{localStorage.removeItem(draftKey)}catch(e){}publish.textContent='Yayınlanıyor…';showState('Yazı kaydedildi, blog hazırlanıyor…','');pollStatus(data.file,data.url,0);
+          try{localStorage.removeItem(draftKey)}catch(e){}publish.textContent='Yayınlanıyor…';showState('Yazı kaydedildi, blog hazırlanıyor…','');pollStatus(data.file,(window.adminLang==='eo'?'':'/'+window.adminLang)+data.url,0);
         }).catch(function(reason){showError(reason.message||'Yazı kaydedilemedi.')});
       });
       syncPreview();
@@ -1102,7 +1279,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       var error=document.getElementById('form-error');
       var imageURL='';
       var draftKey='fmert-story-draft-v2';
-      var badges={text:'METİN',image:'FOTOĞRAF',link:'BAĞLANTI'};
+      var badges={text:adminT('METİN'),image:adminT('FOTOĞRAF'),link:adminT('BAĞLANTI')};
 
       function currentType(){return form.querySelector('input[name="type"]:checked').value}
       function applies(el,type){return (el.dataset.types||'').split(',').indexOf(type)!==-1}
@@ -1118,17 +1295,21 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       }
       function syncPreview(){
         var type=currentType();
-        var main=textInput.value.trim();
-        var sub=subtextInput.value.trim();
+        var language=window.adminLang,mainField=language==='en'?form.elements.text_en:language==='tr'?form.elements.text_tr:textInput;
+        var subField=language==='en'?form.elements.subtext_en:language==='tr'?form.elements.subtext_tr:subtextInput;
+        var labelField=language==='en'?form.elements.link_label_en:language==='tr'?form.elements.link_label_tr:linkLabel;
+        var main=(mainField.value||textInput.value).trim();
+        var sub=(subField.value||subtextInput.value).trim();
         previewText.textContent=main||'Hikâyen burada görünecek';
         previewSubtext.textContent=sub||(main?'':'Yazdıkça önizleme anında güncellenir.');
         previewSubtext.hidden=!sub&&!!main;
-        previewCTA.textContent=(linkLabel.value.trim()||'Aç')+' ↑';
+        previewCTA.textContent=(labelField.value.trim()||adminT('Aç'))+' ↑';
         if(type!=='image') preview.style.background=bgInput.value||'linear-gradient(160deg, #171824, #30215c)';
         document.getElementById('text-count').textContent=textInput.value.length;
       }
       function saveDraft(){
         var draft={type:currentType(),text:textInput.value,title:document.getElementById('title').value,subtext:subtextInput.value,link:linkInput.value,linkLabel:linkLabel.value,bg:bgInput.value};
+        form.querySelectorAll('[name$="_en"],[name$="_tr"]').forEach(function(field){draft[field.name]=field.value});
         try{localStorage.setItem(draftKey,JSON.stringify(draft))}catch(e){}
       }
       function restoreDraft(){
@@ -1137,7 +1318,8 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
           if(!draft)return;
           var radio=form.querySelector('input[name="type"][value="'+draft.type+'"]');
           if(radio)radio.checked=true;
-          textInput.value=draft.text||'';document.getElementById('title').value=draft.title||'';subtextInput.value=draft.subtext||'';linkInput.value=draft.link||'';linkLabel.value=draft.linkLabel||'Aç';bgInput.value=draft.bg||bgInput.value;
+          textInput.value=draft.text||'';document.getElementById('title').value=draft.title||'';subtextInput.value=draft.subtext||'';linkInput.value=draft.link||'';linkLabel.value=draft.linkLabel||'Malfermi';bgInput.value=draft.bg||bgInput.value;
+          form.querySelectorAll('[name$="_en"],[name$="_tr"]').forEach(function(field){field.value=draft[field.name]||field.value});
         }catch(e){}
       }
       function selectFile(file){
@@ -1160,7 +1342,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
         event.preventDefault();error.classList.remove('show');publish.disabled=true;publish.textContent='Yayınlanıyor…';
         fetch(form.action,{method:'POST',body:new FormData(form)}).then(function(response){if(!response.ok)return response.text().then(function(message){throw new Error(message.trim())});try{localStorage.removeItem(draftKey)}catch(e){}showToast('Hikâye yayınlandı');setTimeout(function(){location.reload()},450)}).catch(function(reason){showError(reason.message||'Hikâye yayınlanamadı.');publish.disabled=false;publish.textContent='Şimdi yayınla'});
       });
-      document.querySelectorAll('.delete-form').forEach(function(deleteForm){deleteForm.addEventListener('submit',function(event){if(!confirm('Bu hikâyeyi kalıcı olarak silmek istiyor musun?'))event.preventDefault()})});
+      document.querySelectorAll('.delete-form').forEach(function(deleteForm){deleteForm.addEventListener('submit',function(event){if(!confirm(adminT('Bu hikâyeyi kalıcı olarak silmek istiyor musun?')))event.preventDefault()})});
       document.querySelectorAll('.story-card').forEach(function(card){
         var thumb=card.querySelector('.story-thumb');if(thumb.dataset.image)thumb.style.backgroundImage='url("'+thumb.dataset.image+'")';else if(thumb.dataset.bg)thumb.style.background=thumb.dataset.bg;
         var date=new Date(card.dataset.posted),hours=(Date.now()-date.getTime())/3600000,state=card.querySelector('.story-state');if(hours>=24){state.textContent='Arşiv';state.classList.add('expired')}

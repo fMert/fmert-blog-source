@@ -1,0 +1,93 @@
+eo:
+  page_title: Esploro pri ruĝaj aŭtoj en Aksaray
+  language_label: Lingvo
+  field_data: Kampaj datumoj
+  report_number: Raporto n-ro / 026—TR—2026
+  study_id: Aŭtomobila statistika studo · Majo 2026
+  heading_before: La
+  heading_accent: elektra
+  heading_after: malplimulto de ruĝaj aŭtoj.
+  subtitle: >-
+    Ĉi tiu observa kampa studo pri 100 ruĝaj aŭtoj en la urbocentro de Aksaray esploras la rilaton inter koloro kaj motortipo.
+  key_finding: Ĉefa rezulto
+  finding_before: El la ekzamenitaj ruĝaj aŭtoj,
+  finding_strong: unu el dek
+  finding_after: havas elektran motoron anstataŭ eksplodmotoron.
+  units: aŭtoj
+  scale: Skalo
+  combustion: Eksplodmotoro
+  electric: Elektra
+  sample: Specimeno
+  sample_description: Observitaj ruĝaj aŭtoj
+  electric_description: Ŝargebla motoro
+  ratio: Proporcio
+  ratio_description: Elektraj / ĉiuj
+  location: Loko
+  location_description: Aksaraya numerplata kodo
+  method: Metodo
+  method_description: >-
+    La studo uzis observan nombradon laŭ elektitaj vojoj en la urbocentro de Aksaray. Ni registris elektran motoron ĉe 10 el la 100 ruĝaj aŭtoj observitaj.
+  researchers: Esploristoj
+  verified: Kontrolita
+en:
+  page_title: Red Car Study in Aksaray
+  language_label: Language
+  field_data: Field data
+  report_number: Report no. / 026—TR—2026
+  study_id: Automotive statistics study · May 2026
+  heading_before: The
+  heading_accent: electric
+  heading_after: minority of red cars.
+  subtitle: >-
+    This observational field study of 100 red cars in central Aksaray examines the relationship between color and powertrain type.
+  key_finding: Key finding
+  finding_before: Of the red cars examined,
+  finding_strong: one in ten
+  finding_after: had an electric powertrain instead of a combustion engine.
+  units: cars
+  scale: Scale
+  combustion: Combustion
+  electric: Electric
+  sample: Sample
+  sample_description: Red cars observed
+  electric_description: Rechargeable powertrain
+  ratio: Ratio
+  ratio_description: Electric / total
+  location: Location
+  location_description: Aksaray license plate code
+  method: Method
+  method_description: >-
+    The study used observational counting along selected routes in central Aksaray. Electric powertrains were recorded in 10 of the 100 red cars observed.
+  researchers: Researchers
+  verified: Verified
+tr-TR:
+  page_title: Aksaray Kırmızı Araç Araştırması
+  language_label: Dil
+  field_data: Saha Verisi
+  report_number: Rapor No / 026—TR—2026
+  study_id: Otomotiv İstatistik Çalışması · Mayıs 2026
+  heading_before: Kırmızının
+  heading_accent: elektrikli
+  heading_after: azınlığı.
+  subtitle: >-
+    Aksaray il merkezinde tespit edilen 100 kırmızı otomobil üzerinde yürütülen gözlemsel saha araştırması, renk–güç aktarım organı korelasyonunu inceler.
+  key_finding: Ana Bulgu
+  finding_before: İncelenen kırmızı otomobillerin
+  finding_strong: her on adedinden biri
+  finding_after: içten yanmalı motor yerine elektrikli güç aktarım sistemine sahiptir.
+  units: Birim
+  scale: Ölçek
+  combustion: İçten Yanmalı
+  electric: Elektrikli
+  sample: Örneklem
+  sample_description: Gözlemlenen kırmızı araç
+  electric_description: Şarj edilebilir aktarım
+  ratio: Oran
+  ratio_description: Elektrikli / Toplam
+  location: Lokasyon
+  location_description: Aksaray plaka kodu
+  method: Yöntem
+  method_description: >-
+    Çalışma, Aksaray il merkezinde belirlenen güzergâhlar üzerinde gözlemsel sayım yöntemiyle yürütülmüştür. Tespit edilen 100 kırmızı otomobilde elektrikli güç aktarımı kayıt altına alınmıştır.
+  researchers: Araştırmacılar
+  verified: Doğrulandı

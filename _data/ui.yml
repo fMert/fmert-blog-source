@@ -1,0 +1,108 @@
+eo:
+  language_label: Lingvo
+  search: Serĉi
+  sidebar: Flanka menuo
+  profile_photo: Profilbildo
+  no_facebook: Ne serĉu min ĉe Facebook.
+  theme_toggle: Ŝanĝi koloran etoson
+  email: Retpoŝto
+  stories: Rakontoj
+  story_count: "{count} novaj · videblaj dum 24 horoj"
+  last_story: Lasta rakonto
+  just_now: Ĵus
+  hours_ago: "antaŭ {count} h"
+  story_archive: ARKIVO
+  story_photo: FOTO
+  story_text: TEKSTO
+  story_link: ARTIKOLO
+  story_open: Malfermi
+  story_last_badge: LASTA RAKONTO
+  story_previous: Antaŭa
+  story_next: Sekva
+  story_pause: Paŭzi
+  story_close: Fermi
+  story_like: Ŝati la rakonton
+  like: Ŝati
+  liked: Ŝatita
+  unlike: Malŝati
+  like_count: "{count} ŝatoj"
+  like_notice: "Kun via ŝato, la posedanto de la retejo povas vidi vian IP-adreson, horon, paĝon, aparaton/retumilon kaj referencan retejon."
+  like_load_failed: Ne eblis ŝargi la nombron de ŝatoj.
+  like_saved: Via ŝato estas konservita.
+  like_removed: Via ŝato estas forigita.
+  like_save_failed: Ne eblis konservi. Reprovu.
+  post_like: Ŝati la afiŝon
+  reset_title: fmert.me rekomenciĝas
+  reset_text: Malnova reteja kaŝmemoro estas forigata…
+en:
+  language_label: Language
+  search: Search
+  sidebar: Sidebar
+  profile_photo: Profile photo
+  no_facebook: You will not find me on Facebook.
+  theme_toggle: Change color theme
+  email: Email
+  stories: Stories
+  story_count: "{count} new · visible for 24 hours"
+  last_story: Latest story
+  just_now: Just now
+  hours_ago: "{count} h ago"
+  story_archive: ARCHIVE
+  story_photo: PHOTO
+  story_text: TEXT
+  story_link: ARTICLE
+  story_open: Open
+  story_last_badge: LATEST STORY
+  story_previous: Previous
+  story_next: Next
+  story_pause: Pause
+  story_close: Close
+  story_like: Like this story
+  like: Like
+  liked: Liked
+  unlike: Unlike
+  like_count: "{count} likes"
+  like_notice: "When you like content, the site owner can see your IP address, time, page, device/browser, and referring site."
+  like_load_failed: Could not load the like count.
+  like_saved: Your like was saved.
+  like_removed: Your like was removed.
+  like_save_failed: Could not save. Try again.
+  post_like: Like this post
+  reset_title: Resetting fmert.me
+  reset_text: Clearing the old site cache…
+tr-TR:
+  language_label: Dil
+  search: Ara
+  sidebar: Kenar çubuğu
+  profile_photo: Profil fotoğrafı
+  no_facebook: Beni Facebook'ta bulamazsın.
+  theme_toggle: Renk temasını değiştir
+  email: E-posta
+  stories: Hikayeler
+  story_count: "{count} yeni · 24 saat görünür"
+  last_story: Son hikaye
+  just_now: Az önce
+  hours_ago: "{count} sa önce"
+  story_archive: ARŞİV
+  story_photo: FOTO
+  story_text: METİN
+  story_link: YAZI
+  story_open: Aç
+  story_last_badge: SON HİKAYE
+  story_previous: Önceki
+  story_next: Sonraki
+  story_pause: Duraklat
+  story_close: Kapat
+  story_like: Hikâyeyi beğen
+  like: Beğen
+  liked: Beğendin
+  unlike: Beğeniyi geri al
+  like_count: "{count} beğeni"
+  like_notice: "Beğeniyle birlikte IP, zaman, sayfa, cihaz/tarayıcı ve yönlendiren site bilgileri site sahibine görünür."
+  like_load_failed: Beğeni sayısı yüklenemedi.
+  like_saved: Beğenin kaydedildi.
+  like_removed: Beğenin geri alındı.
+  like_save_failed: Kaydedilemedi. Tekrar dene.
+  post_like: Yazıyı beğen
+  reset_title: fmert.me sıfırlanıyor
+  reset_text: Eski site önbelleği temizleniyor…

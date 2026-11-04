@@ -3,15 +3,15 @@ layout: compress
 sitemap: false
 ---
 <!doctype html>
-<html lang="tr">
+<html lang="{{ site.lang }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="robots" content="noindex, follow">
-    <title>fmert.me sıfırlanıyor</title>
+    <title>{{ site.data.ui[site.lang].reset_title }}</title>
   </head>
   <body>
-    <p>Eski site önbelleği temizleniyor…</p>
+    <p>{{ site.data.ui[site.lang].reset_text }}</p>
     <script>
       Promise.all([
         navigator.serviceWorker
@@ -25,7 +25,7 @@ sitemap: false
             })
           : Promise.resolve()
       ]).then(function () {
-        location.replace('/?fresh=' + Date.now());
+        location.replace('{{ site.baseurl }}/?fresh=' + Date.now());
       });
     </script>
   </body>

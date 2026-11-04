@@ -1,14 +1,14 @@
 ---
-title: Aksaray Kırmızı Araç Araştırması
+title: Esploro pri ruĝaj aŭtoj en Aksaray
 date: 2026-05-20 21:00:00 +0300
-categories: [Araştırma]
-tags: [otomotiv, istatistik, aksaray, elektrikli-araç]
+categories: [Esploro]
+tags: [aŭtomobiloj, statistiko, aksaray, elektraj-aŭtoj]
 ---
 
-Aksaray il merkezinde 100 kırmızı otomobil üzerinde yürüttüğümüz gözlemsel saha araştırmasının sonuçları yayında.
+La rezultoj de nia observa kampa esploro pri 100 ruĝaj aŭtoj en la urbocentro de Aksaray estas publikigitaj.
 
-**Ana bulgu:** Gözlemlenen kırmızı araçların %10'u elektrikli.
+**Ĉefa rezulto:** 10% de la observitaj ruĝaj aŭtoj estas elektraj.
 
-[Tam araştırmayı görüntüle →](/projects/aksaray-kirmizi-araba/)
+[Legi la tutan esploron →](/projects/aksaray-kirmizi-araba/)
 
-*Araştırmacılar: Furkan Mert Bağcı, Ahmet Enes Kaymak*
+*Esploristoj: Furkan Mert Bağcı, Ahmet Enes Kaymak*

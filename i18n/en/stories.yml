@@ -1,0 +1,16 @@
+- id: yeni-hafta
+  type: image
+  image: /assets/img/avatar.jpg
+  title: "New week"
+  text: "A new week, new experiments 🌱"
+  subtext: "A major Queyntisen update is on its way."
+  posted: 2026-07-11 18:00:00 +0300
+- id: queyntisen-yazi
+  type: link
+  bg: "linear-gradient(160deg, #16171f 0%, #241f3d 60%, #1a1b25 100%)"
+  title: "Queyntisen article"
+  text: "New article is live ✍️"
+  subtext: "Queyntisen is now an Obsidian alternative — Markdown, preview, and a built-in AI assistant in the terminal."
+  link: /posts/queyntisen-obsidian-alternatifi/
+  link_label: "Read the article"
+  posted: 2026-07-10 21:00:00 +0300

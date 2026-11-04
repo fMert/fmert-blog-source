@@ -1,6 +1,7 @@
-<section id="stories" aria-label="Hikayeler" hidden>
+{% include lang.html %}
+<section id="stories" aria-label="{{ site.data.ui[lang].stories }}" hidden>
   <div class="stories-header">
-    <h2><i class="fas fa-bolt"></i>Hikayeler</h2>
+    <h2><i class="fas fa-bolt"></i>{{ site.data.ui[lang].stories }}</h2>
     <span class="stories-count"></span>
   </div>
   <div class="stories-row">
@@ -17,7 +18,7 @@
         {% if story.bg %}data-bg="{{ story.bg | escape }}"{% endif %}
         {% if story.link %}
           data-link="{{ story.link | relative_url }}"
-          data-link-label="{{ story.link_label | default: 'Aç' | escape }}"
+          data-link-label="{{ story.link_label | default: site.data.ui[lang].story_open | escape }}"
         {% endif %}
       >
         <span class="story-ring">
@@ -39,7 +40,7 @@
 </section>
 
 <div id="story-viewer" hidden>
-  <button class="sv-nav sv-prev" aria-label="Önceki"><i class="fas fa-angle-left"></i></button>
+  <button class="sv-nav sv-prev" aria-label="{{ site.data.ui[lang].story_previous }}"><i class="fas fa-angle-left"></i></button>
 
   <div class="sv-canvas">
     <div class="sv-img" hidden></div>
@@ -53,9 +54,9 @@
         <div class="sv-name">fmert</div>
         <div class="sv-time"></div>
       </div>
-      <span class="sv-expired-badge" hidden><i class="far fa-clock"></i>SON HİKAYE</span>
-      <button class="sv-pause" aria-label="Duraklat"><i class="fas fa-pause"></i></button>
-      <button class="sv-close" aria-label="Kapat"><i class="fas fa-xmark"></i></button>
+      <span class="sv-expired-badge" hidden><i class="far fa-clock"></i>{{ site.data.ui[lang].story_last_badge }}</span>
+      <button class="sv-pause" aria-label="{{ site.data.ui[lang].story_pause }}"><i class="fas fa-pause"></i></button>
+      <button class="sv-close" aria-label="{{ site.data.ui[lang].story_close }}"><i class="fas fa-xmark"></i></button>
     </div>
 
     <div class="sv-tap sv-tap-left"></div>
@@ -69,10 +70,10 @@
     <div class="sv-cta" hidden>
       <a class="sv-cta-link" href="#"><i class="fas fa-arrow-up"></i><span></span></a>
     </div>
-    <div class="sv-likes" aria-label="Hikâyeyi beğen"></div>
+    <div class="sv-likes" aria-label="{{ site.data.ui[lang].story_like }}"></div>
   </div>
 
-  <button class="sv-nav sv-next" aria-label="Sonraki"><i class="fas fa-angle-right"></i></button>
+  <button class="sv-nav sv-next" aria-label="{{ site.data.ui[lang].story_next }}"><i class="fas fa-angle-right"></i></button>
 </div>
 
 <script src="{{ '/assets/js/stories.js' | relative_url }}" defer></script>

@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,6 +31,103 @@ func TestValidationAndImage(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "test.png")); err != nil {
 		t.Fatal("PNG was not saved")
+	}
+}
+
+func TestDeleteKeepsImageWhenStorySaveFails(t *testing.T) {
+	dir := t.TempDir()
+	a := &app{dataDir: dir, password: "secret"}
+	if err := os.Mkdir(filepath.Join(dir, "media"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	image := filepath.Join(dir, "media", "story.png")
+	if err := os.WriteFile(image, []byte("image"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.saveUnlocked([]Story{{ID: "story", Type: "image", Image: "/story-media/story.png", Text: "story"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(dir, "stories.json.tmp"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	r := httptest.NewRequest("POST", "/stories-api/delete", strings.NewReader("id=story"))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+	w := httptest.NewRecorder()
+	a.delete(w, r)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected save failure, got %d", w.Code)
+	}
+	if _, err := os.Stat(image); err != nil {
+		t.Fatalf("image disappeared after failed save: %v", err)
+	}
+}
+
+func TestPostSlugUsesPublisherAlphabet(t *testing.T) {
+	if got := slugify("Plan ١ ve 2"); got != "plan-ve-2" {
+		t.Fatalf("unexpected slug %q", got)
+	}
+	if got := slugify("Ĉu ĝojaj ŝafoj ĵus venis?"); got != "cu-gojaj-safoj-jus-venis" {
+		t.Fatalf("unexpected Esperanto slug %q", got)
+	}
+}
+
+func TestPostFilenameAvoidsEveryLanguageAndLegacy(t *testing.T) {
+	dir := t.TempDir()
+	for i, language := range []string{"", "eo", "en", "tr"} {
+		path := filepath.Join(dir, language)
+		if err := os.MkdirAll(path, 0755); err != nil {
+			t.Fatal(err)
+		}
+		name := "2026-11-04-example.md"
+		if i > 0 {
+			name = fmt.Sprintf("2026-11-04-example-%d.md", i+1)
+		}
+		if err := os.WriteFile(filepath.Join(path, name), []byte("post"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	filename, err := uniquePostFilename(dir, "2026-11-04", "example")
+	if err != nil || filename != "2026-11-04-example-5.md" {
+		t.Fatalf("unexpected filename %q: %v", filename, err)
+	}
+}
+
+func TestPostMetadataUsesSelectedLanguage(t *testing.T) {
+	a := &app{password: "secret"}
+	values := url.Values{"title": {"Ĉefa ŝanĝo"}, "body": {"Nova programo"}, "title_tr": {"Yeni proje"}, "body_tr": {"Bu proje yenilendi"}, "lang": {"eo"}}
+	r := httptest.NewRequest("POST", "/stories-api/posts/metadata", strings.NewReader(values.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+	w := httptest.NewRecorder()
+	a.postMetadata(w, r)
+	var metadata PostMetadata
+	if w.Code != http.StatusOK || json.NewDecoder(w.Body).Decode(&metadata) != nil {
+		t.Fatalf("metadata request failed: %d %s", w.Code, w.Body.String())
+	}
+	if metadata.Category != "Projekto" || metadata.Slug != "cefa-sango" {
+		t.Fatalf("unexpected localized metadata: %+v", metadata)
+	}
+}
+
+func TestLocalizedStoriesKeepLegacyTurkishOnly(t *testing.T) {
+	stories := []Story{
+		{ID: "old", Text: "Eski"},
+		{ID: "new", Text: "Nova", Link: "/posts/example/", Translations: map[string]StoryTranslation{
+			"en": {Text: "New"}, "tr": {Text: "Yeni"},
+		}},
+	}
+	english := localizedStories(stories, "en")
+	if len(english) != 1 || english[0].Text != "New" || english[0].Link != "/en/posts/example/" {
+		t.Fatalf("unexpected English stories: %+v", english)
+	}
+	esperanto := localizedStories(stories, "eo")
+	if len(esperanto) != 1 || esperanto[0].Text != "Nova" {
+		t.Fatalf("unexpected Esperanto stories: %+v", esperanto)
+	}
+	turkish := localizedStories(stories, "tr")
+	if len(turkish) != 2 || turkish[1].Text != "Yeni" || turkish[1].Link != "/tr/posts/example/" {
+		t.Fatalf("unexpected Turkish stories: %+v", turkish)
 	}
 }
 
@@ -133,8 +232,10 @@ func TestCreatePostWritesMarkdownAndPublishTrigger(t *testing.T) {
 	dataDir := t.TempDir()
 	a := &app{dataDir: dataDir, password: "secret"}
 	values := url.Values{
-		"title": {"Terminal için küçük bir proje"},
-		"body":  {"## Merhaba\n\nBu proje Linux terminalinde çalışıyor."},
+		"title":    {"Terminal için küçük bir proje"},
+		"body":     {"## Merhaba\n\nBu proje Linux terminalinde çalışıyor."},
+		"title_en": {"A small terminal project"}, "body_en": {"## Hello\n\nThis project runs on Linux."},
+		"title_tr": {"Terminal için küçük bir proje"}, "body_tr": {"## Merhaba\n\nBu proje Linux terminalinde çalışıyor."},
 	}
 	r := httptest.NewRequest("POST", "/stories-api/posts", strings.NewReader(values.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -155,12 +256,12 @@ func TestCreatePostWritesMarkdownAndPublishTrigger(t *testing.T) {
 	if !strings.HasSuffix(filename, "-terminal-icin-kucuk-bir-proje.md") {
 		t.Fatalf("unexpected post filename: %s", filename)
 	}
-	markdown, err := os.ReadFile(filepath.Join(postsDir, filename))
+	markdown, err := os.ReadFile(filepath.Join(postsDir, "eo", filename))
 	if err != nil {
 		t.Fatalf("post file missing: %v", err)
 	}
 	content := string(markdown)
-	for _, expected := range []string{`title: "Terminal için küçük bir proje"`, `categories: ["Proje"]`, `tags: ["linux", "terminal"`, `render_with_liquid: false`, `## Merhaba`} {
+	for _, expected := range []string{`title: "Terminal için küçük bir proje"`, `categories: ["Projekto"]`, `tags: ["linux", "terminal"`, `render_with_liquid: false`, `## Merhaba`} {
 		if !strings.Contains(content, expected) {
 			t.Fatalf("post file is missing %q:\n%s", expected, content)
 		}
@@ -178,7 +279,7 @@ func TestPostMetadataListsAlwaysQuoteNumericTags(t *testing.T) {
 func TestCreatePostRetriesFailedFileWithoutDuplicate(t *testing.T) {
 	dataDir := t.TempDir()
 	a := &app{dataDir: dataDir, password: "secret"}
-	values := url.Values{"title": {"TEKNOFEST 2026 finali"}, "body": {"Aynı yazı yeniden denenecek."}}
+	values := url.Values{"title": {"TEKNOFEST 2026 finali"}, "body": {"La sama afiŝo estos reprovitaj."}, "title_en": {"TEKNOFEST 2026 final"}, "body_en": {"The same post will be retried."}, "title_tr": {"TEKNOFEST 2026 finali"}, "body_tr": {"Aynı yazı yeniden denenecek."}}
 
 	create := func() *httptest.ResponseRecorder {
 		r := httptest.NewRequest("POST", "/stories-api/posts", strings.NewReader(values.Encode()))
@@ -204,8 +305,37 @@ func TestCreatePostRetriesFailedFileWithoutDuplicate(t *testing.T) {
 	if w := create(); w.Code != http.StatusOK {
 		t.Fatalf("retry returned %d: %s", w.Code, w.Body.String())
 	}
-	posts, err := filepath.Glob(filepath.Join(postsDir, "*.md"))
+	posts, err := filepath.Glob(filepath.Join(postsDir, "eo", "*.md"))
 	if err != nil || len(posts) != 1 {
 		t.Fatalf("retry created duplicate posts: %v (err=%v)", posts, err)
+	}
+}
+
+func TestCreatePostPublishesAllThreeLanguages(t *testing.T) {
+	dataDir := t.TempDir()
+	a := &app{dataDir: dataDir, password: "secret"}
+	values := url.Values{
+		"title": {"Nova projekto"}, "body": {"La projekto funkcias."},
+		"title_en": {"New project"}, "body_en": {"The project works."},
+		"title_tr": {"Yeni proje"}, "body_tr": {"Bu proje çalışıyor."},
+	}
+	r := httptest.NewRequest("POST", "/stories-api/posts", strings.NewReader(values.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+	w := httptest.NewRecorder()
+	a.createPost(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("create post returned %d: %s", w.Code, w.Body.String())
+	}
+	trigger, err := os.ReadFile(filepath.Join(dataDir, "posts", ".publish-trigger"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	filename := strings.TrimSpace(string(trigger))
+	for language, expected := range map[string]string{"eo": "La projekto funkcias.", "en": "The project works.", "tr": "Bu proje çalışıyor."} {
+		content, err := os.ReadFile(filepath.Join(dataDir, "posts", language, filename))
+		if err != nil || !strings.Contains(string(content), expected) {
+			t.Fatalf("%s translation missing: %v", language, err)
+		}
 	}
 }

@@ -11,8 +11,9 @@ Personal blog of **Furkan Mert Bağcı** — posts about my projects (Queyntisen
 ## What's customized
 
 - **Violet reskin** — the entire theme is recolored through CSS custom properties in `assets/css/jekyll-theme-chirpy.scss`. Both light and dark modes work; the theme's own toggle is untouched.
-- **Stories** — an Instagram-style "Hikayeler" row on the homepage with a fullscreen viewer (progress bars, auto-advance, tap zones, keyboard navigation). Vanilla JS, no dependencies.
-- **Content studio** — the password-protected `/stories-admin` panel has Stories, Posts, and Analytics tabs. Posts can be written in Markdown with a live preview; dates, slugs, categories, and tags are generated automatically without an external AI API.
+- **Three languages** — Esperanto is the default at `/`; English is at `/en/`, and Turkish is at `/tr/`. Flag-only switches appear at the top right. Posts, stories, the research page, and the content studio are translated.
+- **Stories** — an Instagram-style story row on the homepage with a fullscreen viewer (progress bars, auto-advance, tap zones, keyboard navigation). Vanilla JS, no dependencies.
+- **Content studio** — the password-protected `/stories-admin` panel has Stories, Posts, and Analytics tabs. New stories and posts require text in all three languages. Posts can be written in Markdown with a live preview; dates, slugs, categories, and tags are generated automatically without an external AI API.
 - **First-party analytics** — the Analytics tab shows the last 30 days of page views, distinct IPs, popular pages, device/browser categories, referrer domains, and recent visits. Data starts when the tracker is deployed; it is stored in the persistent `deploy/data/analytics/` directory and older daily files are removed when the dashboard is opened. Do Not Track and Global Privacy Control are respected. Counts exclude browsers that block or disable the tracker; IPs do not identify individuals.
 - **Likes** — stories and post pages have a like/unlike button and a public count. The Analytics tab shows every current like with its timestamp, content, IP, page, device/browser category, and referrer domain. These are snapshots of the like request, not a person's browsing history. Only the authenticated admin can see these details. Likes and their snapshots persist in `deploy/data/likes/` until undone; their retention is separate from the 30-day page-view window. A signed, first-party, HttpOnly cookie remembers likes for one year and is created on the first like. Clearing cookies or using another browser allows another like; this is not an identity system. The like button remains usable when passive analytics are disabled by DNT/GPC.
 
@@ -40,7 +41,9 @@ requests are still not proof of a human visit.
 New stories are published from the Stories tab of the password-protected `/stories-admin` page.
 The companion service in `story-admin/` stores its JSON and uploads in the
 mounted `deploy/data/` directory; story content is therefore kept across image
-rebuilds and is never committed. The Jekyll data below is an offline fallback.
+rebuilds and is never committed. Existing single-language stories stay available
+on the Turkish site. The Jekyll data below is an offline fallback, with English
+and Turkish copies in `i18n/`.
 
 Fallback stories live in [`_data/stories.yml`](_data/stories.yml). Their format is:
 
@@ -80,7 +83,8 @@ docker compose up -d --build
 
 The Posts tab in `/stories-admin` saves Markdown drafts in the browser and
 publishes completed posts into the persistent, Git-ignored
-`deploy/data/posts/` directory. The production path unit watches for new posts
+`deploy/data/posts/{eo,en,tr}/` directories. Existing single-language posts in
+`deploy/data/posts/` remain on the Turkish site. The production path unit watches for new posts
 and runs `deploy/publish-posts.sh`, which rebuilds only the blog container,
 checks the new post URL, and keeps the previous image available for rollback.
 Panel-created posts therefore survive regular Git deployments without being
@@ -90,13 +94,13 @@ committed to the repository.
 
 ```bash
 bundle install
-bash tools/run.sh          # serves at http://127.0.0.1:4000 with live reload
+bash tools/run.sh          # builds all languages and serves at http://127.0.0.1:4000
 ```
 
 Or a one-off production build:
 
 ```bash
-JEKYLL_ENV=production bundle exec jekyll build   # output in _site/
+JEKYLL_ENV=production bash tools/build-languages.sh   # output in _site/
 ```
 
 Requires Ruby ≥ 3.1.

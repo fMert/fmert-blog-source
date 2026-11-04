@@ -1,16 +1,15 @@
 ---
-# the default layout is 'page'
 title: About
-seo_title: Furkan Mert Bağcı (fMert) Hakkında
+seo_title: Pri Furkan Mert Bağcı (fMert)
 description: >-
-  Furkan Mert Bağcı (fMert) hakkında; yazılım, Linux, açık kaynak, yapay zekâ ve kişisel projeler odağındaki çalışmalarını ve ilgi alanlarını keşfedin.
+  Ekkonu la programadon, Linukson, liberan programaron, artefaritan inteligentecon kaj personajn projektojn de Furkan Mert Bağcı.
 permalink: /about/
 image:
   path: /assets/img/avatar.jpg
   alt: Furkan Mert Bağcı (fMert)
 seo:
   type: WebPage
-  name: Furkan Mert Bağcı (fMert) Hakkında
+  name: Pri Furkan Mert Bağcı (fMert)
   links:
     - https://github.com/fMert
 icon: fas fa-info-circle
@@ -19,39 +18,39 @@ order: 4
 
 ## Furkan Mert Bağcı (fMert)
 
-Ben Furkan Mert Bağcı; çalışmalarımı internette **fMert** adıyla paylaşıyorum. Türkiye’de yaşıyor ve Aksaray Üniversitesi’nde mühendislik eğitimi alıyorum. Linux, açık kaynak yazılımlar, yapay zekâ destekli geliştirme, terminal araçları, Android geliştirme ve gerçek problemlere pratik çözümler üreten yazılımlarla ilgileniyorum.
+Mi estas Furkan Mert Bağcı kaj publikigas miajn laborojn rete sub la nomo **fMert**. Mi loĝas en Turkio kaj studas inĝenierarton ĉe la Universitato de Aksaray. Min interesas Linukso, libera programaro, disvolvado helpata de artefarita inteligenteco, terminalaj iloj, Android kaj programoj kiuj solvas praktikajn problemojn.
 
-Şu anki çalışmalarımı **prompt mühendisliği**, **yazılım geliştirme** ve **açık kaynak denemeleri**nin bir karışımı olarak tanımlıyorum. Yazma, not alma, yerel yapay zekâ, geliştirici iş akışları ve iletişim sistemleri etrafında araçlar geliştirmekten keyif alıyorum.
+Mian nunan laboron mi priskribus kiel miksaĵon de **prompt-inĝenierado**, **programado** kaj **eksperimentoj pri libera programaro**. Mi ŝatas krei ilojn por verkado, notado, loka AI, laborfluoj de programistoj kaj komunikaj sistemoj.
 
-## Neler Geliştiriyorum
+## Miaj projektoj
 
 ### Queyntisen
 
-Python ile yazılmış, yapay zekâ odaklı bir terminal Markdown editörü.
+AI-centra terminala Markdown-redaktilo verkita en Python.
 
-Queyntisen basit bir terminal editörü olarak başladı; daha sonra onu hafif, terminal öncelikli bir Obsidian alternatifine daha yakın bir yapıya dönüştürdüm. Markdown düzenleme, önizleme/kaynak modları, akış hâlinde yazma süreçleri ve yerleşik yapay zekâ asistanı özelliklerini destekliyor.
+Queyntisen komenciĝis kiel simpla terminala redaktilo; poste mi evoluigis ĝin en malpezan, terminalan alternativon al Obsidian. Ĝi subtenas Markdown-redaktadon, antaŭrigardan kaj fontan reĝimojn, seninterrompan verkadon kaj enkonstruitan AI-asistanton.
 
 ### Aria
 
-Hafıza, ruh hâli, günlük benzeri durum takibi ve kalıcı karakter davranışına odaklanan bir masaüstü yapay zekâ arkadaşı/sohbet uygulaması.
+Labortabla AI-kunulo kaj babilprogramo kun memoro, humoro, taglibro kaj daŭra karaktera konduto.
 
-Aria; yerel yapay zekâ etkileşimi, kişilik sürekliliği ve masaüstü uygulama tasarımı üzerine bir deney.
+Aria estas eksperimento pri loka AI-interago, personeca kontinueco kaj la dezajno de labortablaj programoj.
 
-Projelerimin kaynak kodlarına ve açık kaynak çalışmalarıma [GitHub’daki fMert profilimden](https://github.com/fMert) ulaşabilirsiniz.
+La fontkodo de miaj projektoj kaj miaj liberprogramaraj laboroj troviĝas ĉe [mia GitHub-profilo](https://github.com/fMert).
 
-## İlgi Alanlarım
+## Miaj interesoj
 
-- Linux ve GNU/Linux sistem yönetimi
-- Özgür ve açık kaynak yazılımlar
-- Python geliştirme
-- Kotlin ve Jetpack Compose ile Android geliştirme
-- Terminal tabanlı uygulamalar
-- Yapay zekâ araçları ve prompt mühendisliği
-- Yerel LLM’ler ve gizlilik odaklı yapay zekâ iş akışları
-- Markdown, not alma sistemleri ve kişisel bilgi yönetimi
-- Geliştirici araçları ve editör tasarımı
+- Linukso kaj administrado de GNU/Linuksaj sistemoj
+- Libera kaj malfermkoda programaro
+- Programado en Python
+- Android-programado per Kotlin kaj Jetpack Compose
+- Terminalaj programoj
+- AI-iloj kaj prompt-inĝenierado
+- Lokaj grandaj lingvomodeloj kaj privatecaj AI-laborfluoj
+- Markdown, notado kaj persona sciadministrado
+- Iloj por programistoj kaj dezajno de redaktiloj
 
-## Diller
+## Lingvoj
 
-- **Türkçe** — Ana dil
-- **İngilizce** — Profesyonel çalışma yeterliliği
+- **Turka** — denaska lingvo
+- **Angla** — profesia laborkapablo

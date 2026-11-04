@@ -3,12 +3,17 @@ layout: null
 permalink: /projects/aksaray-kirmizi-araba/
 sitemap: false
 ---
+{% assign t = site.data.project[site.lang] %}
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="{{ site.lang }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aksaray Kırmızı Araç Araştırması — 2026</title>
+<title>{{ t.page_title }} — 2026</title>
+<meta name="description" content="{{ t.subtitle | escape }}">
+<link rel="alternate" hreflang="eo" href="https://fmert.me/projects/aksaray-kirmizi-araba/">
+<link rel="alternate" hreflang="en" href="https://fmert.me/en/projects/aksaray-kirmizi-araba/">
+<link rel="alternate" hreflang="tr" href="https://fmert.me/tr/projects/aksaray-kirmizi-araba/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,700;9..144,900&display=swap" rel="stylesheet">
@@ -93,6 +98,11 @@ sitemap: false
     box-shadow: 0 0 12px var(--red-glow);
     animation: pulse 2s infinite;
   }
+  .project-languages { display:flex; gap:7px; margin-left:auto; padding-left:12px; }
+  .project-languages a { display:inline-flex; padding:3px; border-radius:4px; opacity:.65; }
+  .project-languages a[aria-current="page"], .project-languages a:hover { opacity:1; outline:1px solid var(--accent); }
+  .project-languages a:focus-visible { outline:2px solid var(--accent); }
+  .project-languages img { width:25px; height:18px; }
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
@@ -345,43 +355,46 @@ sitemap: false
 <div class="container">
 
   <div class="topbar">
-    <span><span class="dot"></span>Saha Verisi · Aksaray</span>
-    <span>Rapor No / 026—TR—2026</span>
+    <span><span class="dot"></span>{{ t.field_data }} · Aksaray</span>
+    <span>{{ t.report_number }}</span>
+    <nav class="project-languages" aria-label="{{ t.language_label }}">
+      <a href="/projects/aksaray-kirmizi-araba/" hreflang="eo" aria-label="Esperanto"{% if site.lang == 'eo' %} aria-current="page"{% endif %}><img src="{{ '/assets/img/flag-eo.svg' | relative_url }}" alt=""></a>
+      <a href="/en/projects/aksaray-kirmizi-araba/" hreflang="en" aria-label="English"{% if site.lang == 'en' %} aria-current="page"{% endif %}><img src="{{ '/assets/img/flag-en.svg' | relative_url }}" alt=""></a>
+      <a href="/tr/projects/aksaray-kirmizi-araba/" hreflang="tr" aria-label="Türkçe"{% if site.lang == 'tr-TR' %} aria-current="page"{% endif %}><img src="{{ '/assets/img/flag-tr.svg' | relative_url }}" alt=""></a>
+    </nav>
   </div>
 
   <header>
-    <div class="study-id">Otomotiv İstatistik Çalışması · Mayıs 2026</div>
-    <h1>Kırmızının <span class="accent">elektrikli</span> azınlığı.</h1>
+    <div class="study-id">{{ t.study_id }}</div>
+    <h1>{{ t.heading_before }} <span class="accent">{{ t.heading_accent }}</span> {{ t.heading_after }}</h1>
     <p class="subtitle">
-      Aksaray il merkezinde tespit edilen 100 kırmızı otomobil üzerinde yürütülen
-      gözlemsel saha araştırması, renk–güç aktarım organı korelasyonunu inceler.
+      {{ t.subtitle }}
     </p>
   </header>
 
   <section class="stat-grid">
     <div class="big-stat">
-      <div class="label">Ana Bulgu</div>
+      <div class="label">{{ t.key_finding }}</div>
       <div class="big-number">10<sup>%</sup></div>
       <p class="big-description">
-        İncelenen kırmızı otomobillerin <strong>her on adedinden biri</strong>,
-        içten yanmalı motor yerine elektrikli güç aktarım sistemine sahiptir.
+        {{ t.finding_before }} <strong>{{ t.finding_strong }}</strong> {{ t.finding_after }}
       </p>
     </div>
 
     <div>
       <div class="viz-label">
-        <span>n = 100 Birim</span>
-        <span>Ölçek 1:1</span>
+        <span>n = 100 {{ t.units }}</span>
+        <span>{{ t.scale }} 1:1</span>
       </div>
       <div class="car-grid" id="carGrid"></div>
       <div class="legend">
         <div class="legend-item">
           <div class="legend-swatch swatch-red"></div>
-          <span>İçten Yanmalı (90)</span>
+          <span>{{ t.combustion }} (90)</span>
         </div>
         <div class="legend-item">
           <div class="legend-swatch swatch-electric"></div>
-          <span>Elektrikli (10)</span>
+          <span>{{ t.electric }} (10)</span>
         </div>
       </div>
     </div>
@@ -390,45 +403,43 @@ sitemap: false
   <section class="bottom-section">
     <div class="metrics">
       <div class="metric">
-        <div class="key">Örneklem</div>
+        <div class="key">{{ t.sample }}</div>
         <div class="val">100</div>
-        <div class="desc">Gözlemlenen kırmızı araç</div>
+        <div class="desc">{{ t.sample_description }}</div>
       </div>
       <div class="metric">
-        <div class="key">Elektrikli</div>
+        <div class="key">{{ t.electric }}</div>
         <div class="val">10</div>
-        <div class="desc">Şarj edilebilir aktarım</div>
+        <div class="desc">{{ t.electric_description }}</div>
       </div>
       <div class="metric">
-        <div class="key">Oran</div>
+        <div class="key">{{ t.ratio }}</div>
         <div class="val">0.10</div>
-        <div class="desc">Elektrikli / Toplam</div>
+        <div class="desc">{{ t.ratio_description }}</div>
       </div>
       <div class="metric">
-        <div class="key">Lokasyon</div>
+        <div class="key">{{ t.location }}</div>
         <div class="val">68</div>
-        <div class="desc">Aksaray plaka kodu</div>
+        <div class="desc">{{ t.location_description }}</div>
       </div>
     </div>
 
     <div class="methodology">
-      <div class="h">Yöntem</div>
+      <div class="h">{{ t.method }}</div>
       <div class="p">
-        Çalışma, Aksaray il merkezinde belirlenen güzergâhlar üzerinde gözlemsel
-        sayım yöntemiyle yürütülmüştür. Tespit edilen 100 kırmızı otomobilde
-        elektrikli güç aktarımı kayıt altına alınmıştır.
+        {{ t.method_description }}
       </div>
     </div>
   </section>
 
   <footer>
     <div class="researchers">
-      <span class="lbl">Araştırmacılar</span>
+      <span class="lbl">{{ t.researchers }}</span>
       <span class="name">Furkan Mert Bağcı</span> · <span class="name">Ahmet Enes Kaymak</span>
     </div>
     <div class="stamp">
       Aksaray · 2026
-      <span class="seal">Doğrulandı</span>
+      <span class="seal">{{ t.verified }}</span>
     </div>
   </footer>
 

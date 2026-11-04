@@ -57,8 +57,12 @@ main() {
   read_baseurl
 
   # build
-  JEKYLL_ENV=production bundle exec jekyll b \
-    -d "$SITE_DIR$_baseurl" -c "$_config"
+  if [[ $_config == _config.yml ]]; then
+    JEKYLL_ENV=production bash tools/build-languages.sh "$SITE_DIR"
+  else
+    JEKYLL_ENV=production bundle exec jekyll b \
+      -d "$SITE_DIR$_baseurl" -c "$_config"
+  fi
 
   # test
   bundle exec htmlproofer "$SITE_DIR" \

@@ -25,7 +25,9 @@ if [[ ! -s "$TRIGGER" ]]; then
 fi
 
 post_file=$(head -n 1 "$TRIGGER" | tr -d '\r\n')
-if [[ ! "$post_file" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.md$ ]] || [[ ! -f "$POSTS_DIR/$post_file" ]]; then
+if [[ ! "$post_file" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.md$ ]] ||
+   { [[ ! -f "$POSTS_DIR/$post_file" ]] &&
+     { [[ ! -f "$POSTS_DIR/eo/$post_file" ]] || [[ ! -f "$POSTS_DIR/en/$post_file" ]] || [[ ! -f "$POSTS_DIR/tr/$post_file" ]]; }; }; then
   write_status failed "" "Geçersiz yayın isteği"
   exit 1
 fi
@@ -33,6 +35,13 @@ fi
 post_slug=${post_file%.md}
 post_slug=${post_slug:11}
 post_url="/posts/$post_slug/"
+if [[ -f "$POSTS_DIR/$post_file" ]]; then
+  post_url="/tr$post_url"
+fi
+post_urls=("$post_url")
+if [[ ! -f "$POSTS_DIR/$post_file" ]]; then
+  post_urls+=("/en$post_url" "/tr$post_url")
+fi
 rollback_image="fmert-blog:post-rollback-$$"
 old_image=$(docker image inspect --format '{{.Id}}' fmert-blog:local 2>/dev/null || true)
 if [[ -n "$old_image" ]]; then
@@ -59,9 +68,15 @@ fi
 published=false
 for _ in {1..60}; do
   health=$(docker inspect --format '{{.State.Health.Status}}' fmert_blog 2>/dev/null || true)
-  if [[ "$health" == healthy ]] && curl --fail --silent --show-error "http://127.0.0.1:8080$post_url" >/dev/null; then
+  if [[ "$health" == healthy ]]; then
     published=true
-    break
+    for url in "${post_urls[@]}"; do
+      if ! curl --fail --silent "http://127.0.0.1:8080$url" >/dev/null; then
+        published=false
+        break
+      fi
+    done
+    if [[ "$published" == true ]]; then break; fi
   fi
   sleep 2
 done

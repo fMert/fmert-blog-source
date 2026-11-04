@@ -1,83 +1,83 @@
 ---
-title: Queyntisen – Terminalde Yapay Zeka ile Kod Yazmanın Yeni Yolu
+title: Queyntisen — nova maniero programi per AI en la terminalo
 date: 2026-05-29 20:00:00 +0300
-categories: [Yazılım]
-tags: [queyntisen, terminal-editor, llm, vim, yapay-zeka, acik-kaynak, python]
+categories: [Programado]
+tags: [queyntisen, terminala-redaktilo, llm, vim, artefarita-inteligenteco, libera-programaro, python]
 ---
 
-Birkaç ay önce sıfırdan bir terminal editörü yazdım. Adı **Queyntisen**. Python ile yazılmış, Vim'den esinlenmiş ama onu farklı kılan bir şey var: Büyük Dil Modelleri (LLM) ile doğal entegrasyon.
+Antaŭ kelkaj monatoj mi verkis terminalan redaktilon de nulo. Ĝia nomo estas **Queyntisen**. Ĝi estas verkita en Python kaj inspirita de Vim, sed unu afero distingas ĝin: rekta integriĝo kun grandaj lingvomodeloj (LLM).
 
-Düşünsene — kod yazıyorsun, bir yerde takıldın. Editörden çıkmadan, dosyanın tamamını modele gönderip düzeltilmiş halini anında alabiliyorsun. Queyntisen tam olarak bunu yapıyor.
+Imagu, ke vi programas kaj blokiĝas. Sen forlasi la redaktilon vi povas sendi la tutan dosieron al modelo kaj tuj ricevi korektitan version. Ĝuste tion Queyntisen faras.
 
-## Neden Kendi Editörünü Yazdın?
+## Kial verki propran redaktilon?
 
-Aslında ihtiyaçtan doğdu. Vim kullanıyorum, VS Code kullanıyorum. Ama ikisi arasında gidip gelmek, hele ki AI asistanı için ayrı bir pencereyle uğraşmak can sıkıcıydı. "Keşke editörün içinde, bir tuşla modele sorabilsem ve cevabı yine editörde görebilsem" dedim. Sonra da oturup yazdım.
+Ĝi naskiĝis el bezono. Mi uzas Vim kaj VS Code, sed iri tien kaj reen inter ili — kaj malfermi apartan fenestron por AI-asistanto — estis ĝene. Mi volis demandi modelon per unu klavo kaj vidi la respondon en la redaktilo mem. Do mi sidiĝis kaj verkis ĝin.
 
-## Özellikler
+## Trajtoj
 
-### Modal Düzenleme (Vim Ruhu)
+### Reĝima redaktado (la spirito de Vim)
 
-Normal modda gezinme ve komutlar, Insert modda yazma. Vim'den alışkın olduğun neredeyse her şey var:
+Movado kaj komandoj en normala reĝimo, skribado en eniga reĝimo. Preskaŭ ĉio konata de Vim troviĝas ĉi tie:
 
-- `hjkl` ile gezinme (ok tuşları da çalışıyor)
-- `dd` ile satır sil/kes
-- `yy` ile satır kopyala (yank)
-- `p` ile yapıştır
-- `u` veya `Ctrl+Z` ile geri al — tam bir history stack ile
-- `/` ile arama, `n`/`b` ile sonraki/önceki eşleşme (dosya sonuna gelince başa sarar)
+- Movado per `hjkl` (ankaŭ la sagoklavoj funkcias)
+- Forigo aŭ eltranĉo de linio per `dd`
+- Kopiado de linio per `yy`
+- Algluo per `p`
+- Malfaro per `u` aŭ `Ctrl+Z`, kun plena historio
+- Serĉo per `/`, antaŭa aŭ sekva trafo per `n`/`b`; la serĉo rekomenciĝas ĉe la fino de dosiero
 
-### Bölünmüş Panel: Kod + AI Sohbet
+### Dividita panelo: kodo kaj AI-babilo
 
-`Ctrl+W` ile kod paneli ve AI sohbet paneli arasında geçiş yapıyorsun. Ekranın %70'i kod, %30'u sohbet. Sağ panele sorunu yaz, Enter'a bas — AI cevabı yapıştırsın.
+Per `Ctrl+W` oni alternas inter la kodpanelo kaj AI-babilpanelo. La kodo okupas 70% de la ekrano kaj la babilo 30%. Tajpu demandon dekstre, premu Enter, kaj la AI liveros respondon.
 
-![Queyntisen Ekran Görüntüsü](https://raw.githubusercontent.com/fMert/Queyntisen/main/screenshot.png)
+![Ekrankopio de Queyntisen](https://raw.githubusercontent.com/fMert/Queyntisen/main/screenshot.png)
 
-### AI Entegrasyonu Nasıl Çalışıyor?
+### Kiel funkcias la AI-integriĝo?
 
-İşin güzel yanı: **AI işlemi arka planda çalışıyor.** Editör donmuyor, sen yazmaya devam edebiliyorsun. Sistem şöyle işliyor:
+La grava afero estas, ke **la AI-laboro okazas en la fono**. La redaktilo ne frostiĝas, do vi povas daŭre skribi. La fluo estas jena:
 
-1. Chat paneline isteğini yazıyorsun ("Bu fonksiyonu async yap", "Hata ayıklama ekle", vs.)
-2. Dosyanın mevcut içeriği otomatik olarak modele bağlam (context) olarak gönderiliyor
-3. Model sadece kodu üretiyor (açıklama yok, markdown yok — sistem prompt'u öyle ayarladım)
-4. Dönen kod direkt editör buffer'ına uygulanıyor
+1. Vi skribas peton en la babilpanelo ("faru ĉi tiun funkcion nesinkrona", "aldonu sencimigon" ktp.).
+2. La nuna enhavo de la tuta dosiero estas aŭtomate sendata al la modelo kiel kunteksto.
+3. La modelo produktas nur kodon, sen klarigoj aŭ Markdown, laŭ la sistema instrukcio.
+4. La respondo estas aplikata rekte al la redaktila bufro.
 
-Hem **yerel modellerle** (LM Studio, Ollama) hem de **OpenAI API** ile çalışıyor. Başlangıçta hangi modelin bağlı olduğunu otomatik algılıyor.
+Ĝi funkcias kun **lokaj modeloj** (LM Studio, Ollama) kaj kun la **OpenAI-API**. Ĉe lanĉo ĝi aŭtomate rekonas la konektitan modelon.
 
-Konfigürasyon dosyası yok, sadece `editor.py`'nin üstündeki iki değişken:
+Ne estas aparta agordodosiero; nur du variabloj ĉe la supro de `editor.py`:
 
 ```python
-# Yerel LLM için (varsayılan)
+# Por loka LLM (defaŭlte)
 API_KEY = "lm-studio"
 BASE_URL = "http://localhost:1234/v1"
 
-# OpenAI API için
+# Por la OpenAI-API
 API_KEY = os.getenv("OPENAI_API_KEY")
 BASE_URL = "https://api.openai.com/v1"
 ```
 
-### Syntax Highlighting
+### Sintaksa kolorigo
 
-Python anahtar kelimeleri mavi, string'ler sarı, yorum satırları yeşil, sayılar magenta. Sade, göz yormayan bir renk paleti.
+Python-ŝlosilvortoj estas bluaj, ĉenoj flavaj, komentoj verdaj kaj nombroj magentaj. La kolorskemo estas simpla kaj agrabla por la okuloj.
 
-### Satır Numaralandırma
+### Lininombroj
 
-Vim kullanıcıları bilir — üç mod var:
+Vim-uzantoj konas tri reĝimojn:
 
-- `:numara goreli` — imlece olan uzaklığı gösterir (Vim'in `relativenumber`)
-- `:numara normal` — gerçek satır numaraları
-- `:numara yok` — numaraları kapat
+- `:numara goreli` — montras la distancon de la kursoro (kiel `relativenumber` en Vim)
+- `:numara normal` — montras la verajn lininombrojn
+- `:numara yok` — kaŝas lininombrojn
 
-### Mouse Desteği
+### Subteno de muso
 
-Fareyle tıklayıp imleci istediğin yere taşıyabiliyorsun. Satır sonuna clamping, margin hesaplaması — hepsi düşünüldü.
+Vi povas klaki por movi la kursoron. Ankaŭ limigo ĉe linifinoj kaj kalkulo de marĝenoj estas prizorgitaj.
 
-### Akıllı Backspace ve Tab
+### Saĝaj Backspace kaj Tab
 
-Tab tuşu 4 boşluk ekliyor. Backspace ile silerken, eğer imlecin solunda tam 4 boşluk varsa hepsini birden siliyor. Küçük ama yazarken fark eden bir detay.
+Tab aldonas kvar spacojn. Backspace forigas ĉiujn kvar samtempe se ĝuste kvar spacoj troviĝas maldekstre de la kursoro. Malgranda detalo, sed ĝi helpas dum verkado.
 
-## Kurulum
+## Instalado
 
-Tek komutla:
+Per unu komando:
 
 ```bash
 git clone https://github.com/fMert/Queyntisen.git
@@ -86,31 +86,28 @@ chmod +x install.sh
 ./install.sh
 ```
 
-Script senin için venv oluşturuyor, `openai` kütüphanesini yüklüyor, `queyntisen` komutunu PATH'e ekliyor. Shell'in `.bashrc`, `.zshrc` veya `.profile` dosyasına otomatik PATH ayarını yapıyor. Terminali kapat-aç, `queyntisen dosya.py` yaz, çalış.
+La skripto kreas virtualan Python-medion, instalas la bibliotekon `openai`, aldonas la komandon `queyntisen` al PATH kaj ĝisdatigas `.bashrc`, `.zshrc` aŭ `.profile`. Remalfermu la terminalon kaj rulu `queyntisen dosiero.py`.
 
-Gereksinimler: Python 3.8+ ve `openai` kütüphanesi. O kadar.
+Postuloj: Python 3.8+ kaj la biblioteko `openai`. Jen ĉio.
 
-## Neler Eksik?
+## Kio ankoraŭ mankas?
 
-Bu bir "tamamlanmış ürün" değil. Deneysel bir proje. Şu an eksik olanlar:
+Ĉi tio ne estas finita produkto. Ĝi estas eksperimenta projekto, al kiu ankoraŭ mankas:
 
-- Görsel mod (Visual mode) — seçim yapıp toplu işlem
-- Çoklu dosya desteği (buffer switching / tabs)
-- Dil bilgisi farkındalığı olmayan renklendirme (şu an sadece regex bazlı)
-- Sadece Python anahtar kelimelerini highlight'lıyor
-- Chat geçmişi kaydedilmiyor
+- Vida reĝimo por elekto kaj grupa redaktado
+- Subteno de pluraj dosieroj (bufroj aŭ langetoj)
+- Lingvokonscia sintaksa kolorigo; nun ĝi uzas nur regulesprimojn
+- Kolorigo de ŝlosilvortoj por lingvoj aliaj ol Python
+- Konservado de babilhistorio
 
-Ama çalışıyor. İş görüyor. Ben birkaç aydır kendi küçük script'lerim için kullanıyorum.
+Tamen ĝi funkcias. Mi uzas ĝin por miaj malgrandaj skriptoj jam de kelkaj monatoj.
 
-## Neden "Queyntisen"?
+## Kial "Queyntisen"?
 
-Orta İngilizce (Middle English) bir kelime: *queyntisen*. Anlamı "süslenmek, güzel kıyafetlerle donanmak" (*to dress up; to adorn with fine clothing*). Etimolojisi: *queyntise* ("beceri, incelik, zarafet") + *-en* (mastar eki).
+*Queyntisen* estas mezangla vorto signifanta "ornami sin; surmeti belajn vestojn". Ĝi devenas de *queyntise* ("lerteco, rafiniteco, eleganteco") kaj la infinitiva finaĵo *-en*.
 
-Bir editörün kodunu "süslemesi", AI ile daha yetkin hale getirmesi — isim tam oturuyor aslında. Kulağa hoş gelen, benzersiz bir kelime olması da bonus.
+La ideo, ke redaktilo "ornamas" kodon kaj faras ĝin pli kapabla per AI, taŭgas al la nomo. Krome ĝi estas unika kaj sonas bele.
 
-## Kaynak Kodu
+## Fontkodo
 
-Proje [GitHub'da](https://github.com/fMert/Queyntisen) açık kaynak, GPL v3 lisanslı. Tek dosya: `editor.py` (~870 satır). İncelemek, fork'lamak, katkı yapmak serbest.
-
----
-
+La projekto estas [libera ĉe GitHub](https://github.com/fMert/Queyntisen) sub GPL v3. Ĝi konsistas el unu dosiero, `editor.py` (ĉirkaŭ 870 linioj). Vi rajtas ĝin esplori, forki kaj plibonigi.

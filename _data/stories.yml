@@ -7,17 +7,17 @@
 - id: yeni-hafta
   type: image
   image: /assets/img/avatar.jpg
-  title: "Yeni hafta"
-  text: "Yeni bir hafta, yeni denemeler 🌱"
-  subtext: "Queyntisen için büyük bir güncelleme yolda."
+  title: "Nova semajno"
+  text: "Nova semajno, novaj provoj 🌱"
+  subtext: "Granda ĝisdatigo por Queyntisen venas."
   posted: 2026-07-11 18:00:00 +0300
 
 - id: queyntisen-yazi
   type: link
   bg: "linear-gradient(160deg, #16171f 0%, #241f3d 60%, #1a1b25 100%)"
-  title: "Queyntisen yazısı"
-  text: "Yeni yazı yayında ✍️"
-  subtext: "Queyntisen Artık Bir Obsidian Alternatifi — terminalde Markdown, önizleme ve yerleşik AI asistanı."
+  title: "Artikolo pri Queyntisen"
+  text: "Nova artikolo aperis ✍️"
+  subtext: "Queyntisen nun estas alternativo al Obsidian — Markdown, antaŭrigardo kaj enkonstruita AI-asistanto en la terminalo."
   link: /posts/queyntisen-obsidian-alternatifi/
-  link_label: "Yazıyı oku"
+  link_label: "Legi la artikolon"
   posted: 2026-07-10 21:00:00 +0300

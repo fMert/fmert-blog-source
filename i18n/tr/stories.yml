@@ -1,0 +1,23 @@
+# Homepage stories. A story is visible for 24h after `posted`; afterwards only
+# the newest story stays, shown in "Son hikaye" (expired) style.
+# Fields: id (unique), type (image|text|link), text, subtext (optional),
+#         image (type: image), bg (CSS background, type: text|link),
+#         link + link_label (type: link), title (short card caption, optional,
+#         falls back to text), posted (with timezone).
+- id: yeni-hafta
+  type: image
+  image: /assets/img/avatar.jpg
+  title: "Yeni hafta"
+  text: "Yeni bir hafta, yeni denemeler 🌱"
+  subtext: "Queyntisen için büyük bir güncelleme yolda."
+  posted: 2026-07-11 18:00:00 +0300
+
+- id: queyntisen-yazi
+  type: link
+  bg: "linear-gradient(160deg, #16171f 0%, #241f3d 60%, #1a1b25 100%)"
+  title: "Queyntisen yazısı"
+  text: "Yeni yazı yayında ✍️"
+  subtext: "Queyntisen Artık Bir Obsidian Alternatifi — terminalde Markdown, önizleme ve yerleşik AI asistanı."
+  link: /posts/queyntisen-obsidian-alternatifi/
+  link_label: "Yazıyı oku"
+  posted: 2026-07-10 21:00:00 +0300

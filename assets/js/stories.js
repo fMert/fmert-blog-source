@@ -5,7 +5,8 @@
   var DURATION = 5000;
   var WINDOW = 24 * 60 * 60 * 1000;
   var SEEN_KEY = 'fmert-stories-seen';
-  var BADGES = { image: 'FOTO', text: 'METİN', link: 'YAZI' };
+  var t = window.FmertI18n;
+  var BADGES = { image: t.story_photo, text: t.story_text, link: t.story_link };
 
   var section = document.getElementById('stories');
   var viewer = document.getElementById('story-viewer');
@@ -27,7 +28,7 @@
       if (story.bg) card.dataset.bg = story.bg;
       if (story.link) {
         card.dataset.link = story.link;
-        card.dataset.linkLabel = story.link_label || 'Aç';
+        card.dataset.linkLabel = story.link_label || t.story_open;
       }
 
       var ring = document.createElement('span');
@@ -81,9 +82,9 @@
   }
 
   function timeLabel(card) {
-    if (card.classList.contains('expired')) return 'Son hikaye';
+    if (card.classList.contains('expired')) return t.last_story;
     var hours = Math.floor((now - Date.parse(card.dataset.posted)) / 3600000);
-    return hours < 1 ? 'Az önce' : hours + ' sa önce';
+    return hours < 1 ? t.just_now : t.hours_ago.replace('{count}', hours);
   }
 
   function paintRings() {
@@ -98,7 +99,7 @@
   visible.forEach(function (c, i) {
     var expired = c.classList.contains('expired');
     c.querySelector('.story-badge').textContent =
-      expired ? 'ARŞİV' : BADGES[c.dataset.type] || 'METİN';
+      expired ? t.story_archive : BADGES[c.dataset.type] || t.story_text;
     c.querySelector('.story-time').textContent = timeLabel(c);
     c.hidden = false;
     c.addEventListener('click', function () { open(i); });
@@ -106,7 +107,7 @@
   paintRings();
 
   section.querySelector('.stories-count').textContent =
-    fresh.length + ' yeni · 24 saat görünür';
+    t.story_count.replace('{count}', fresh.length);
   section.hidden = false;
 
   /* ---- viewer ---- */
@@ -248,12 +249,13 @@
 
   }
 
-  fetch('/stories-api?fresh=' + Date.now(), { cache: 'no-store' })
+  var language = document.documentElement.lang === 'tr-TR' ? 'tr' : document.documentElement.lang;
+  fetch('/stories-api?lang=' + encodeURIComponent(language) + '&fresh=' + Date.now(), { cache: 'no-store' })
     .then(function (response) {
       if (!response.ok) throw new Error('Hikâye servisine ulaşılamadı');
       return response.json();
     })
-    .then(renderLiveCards)
+    .then(function (stories) { if (stories.length) renderLiveCards(stories); })
     .then(start)
     .catch(start); // Keep the built-in stories as an offline fallback.
 })();

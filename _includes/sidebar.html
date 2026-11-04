@@ -1,6 +1,6 @@
 <!-- The Side Bar -->
 
-<aside aria-label="Kenar çubuğu" id="sidebar" class="d-flex flex-column align-items-end">
+<aside aria-label="{{ site.data.ui[include.lang].sidebar }}" id="sidebar" class="d-flex flex-column align-items-end">
   <header class="profile-wrapper">
     <a href="{{ '/' | relative_url }}" id="avatar" class="rounded-circle">
       {%- if site.avatar != empty and site.avatar -%}
@@ -11,7 +11,7 @@
           src="{{- avatar_url -}}"
           width="112"
           height="112"
-          alt="Profil fotoğrafı"
+          alt="{{ site.data.ui[include.lang].profile_photo }}"
           onerror="this.style.display='none'"
         >
       {%- endif -%}
@@ -45,18 +45,13 @@
       {% endfor %}
     </ul>
     <div class="sidebar-no-facebook">
-      <img
-        src="{{ '/assets/img/no-facebook.svg' | relative_url }}"
-        alt="Not f’d. You won’t find us on Facebook"
-        width="521"
-        height="148"
-      >
+      <span>{{ site.data.ui[include.lang].no_facebook }}</span>
     </div>
   </nav>
 
   <div class="sidebar-bottom d-flex flex-wrap align-items-center w-100">
     {% unless site.theme_mode %}
-      <button type="button" class="btn btn-link nav-link" aria-label="Renk temasını değiştir" id="mode-toggle">
+      <button type="button" class="btn btn-link nav-link" aria-label="{{ site.data.ui[include.lang].theme_toggle }}" id="mode-toggle">
         <i class="fas fa-adjust"></i>
       </button>
 
@@ -93,7 +88,7 @@
       {% if url %}
         {% assign contact_label = entry.type %}
         {% if entry.type == 'email' %}
-          {% assign contact_label = 'E-posta' %}
+          {% assign contact_label = site.data.ui[include.lang].email %}
         {% endif %}
         <a
           href="{{ url }}"
