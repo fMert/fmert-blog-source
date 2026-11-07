@@ -123,20 +123,51 @@ func (a *app) findLikeTarget(kind, id string) (LikeTarget, error) {
 	}
 	a.targetMu.Lock()
 	defer a.targetMu.Unlock()
+	targets := a.targets
+	var fetchErr error
 	if time.Since(a.targetsUpdated) > time.Minute {
-		targets, err := fetchLikeTargets("")
-		if err != nil {
-			return LikeTarget{}, err
+		targets, fetchErr = fetchAllLikeTargets()
+		if fetchErr == nil {
+			a.targets = targets
+			a.targetsUpdated = time.Now()
 		}
-		a.targets = targets
-		a.targetsUpdated = time.Now()
 	}
-	for _, target := range a.targets {
+	for _, target := range targets {
 		if target.Kind == kind && target.ID == id {
 			return target, nil
 		}
 	}
+	if fetchErr != nil {
+		// A missing manifest cannot prove the content is gone.
+		return LikeTarget{}, fetchErr
+	}
 	return LikeTarget{}, os.ErrNotExist
+}
+
+// Legacy posts exist only in the Turkish build, so every language manifest is
+// merged by (kind, id). The root manifest is read first and keeps its title.
+// Successful manifests are returned even when another one fails.
+func fetchAllLikeTargets() ([]LikeTarget, error) {
+	type key struct{ kind, id string }
+	seen := make(map[key]bool)
+	var merged []LikeTarget
+	var firstErr error
+	for _, prefix := range []string{"", "/en", "/tr"} {
+		targets, err := fetchLikeTargets(prefix)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("%s/like-targets.json: %w", prefix, err)
+			}
+			continue
+		}
+		for _, target := range targets {
+			if k := (key{target.Kind, target.ID}); !seen[k] {
+				seen[k] = true
+				merged = append(merged, target)
+			}
+		}
+	}
+	return merged, firstErr
 }
 
 func fetchLikeTargets(prefix string) ([]LikeTarget, error) {

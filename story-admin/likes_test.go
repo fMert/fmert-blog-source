@@ -151,6 +151,57 @@ func TestLikesPublishedManifestAndLiveStories(t *testing.T) {
 	assertLikeState(t, sendLike(a, nil, "story", "live-story", true), 1, true)
 }
 
+func TestLikesMergeLanguageManifests(t *testing.T) {
+	manifests := map[string]string{
+		"/like-targets.json":    `[{"kind":"post","id":"/posts/shared/","title":"Root title"}]`,
+		"/en/like-targets.json": `[{"kind":"post","id":"/posts/shared/","title":"English title"}]`,
+		"/tr/like-targets.json": `[{"kind":"post","id":"/posts/shared/","title":"Türkçe başlık"},{"kind":"post","id":"/posts/eski/","title":"Eski yazı"}]`,
+	}
+	var mu sync.Mutex
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		body, ok := manifests[r.URL.Path]
+		mu.Unlock()
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		w.Write([]byte(body))
+	}))
+	defer server.Close()
+	t.Setenv("BLOG_ORIGIN", server.URL)
+
+	a := &app{dataDir: t.TempDir(), password: "secret"}
+	legacy := sendLike(a, nil, "post", "/posts/eski/", true)
+	assertLikeState(t, legacy, 1, true)
+	assertLikeState(t, sendLike(a, nil, "post", "/posts/shared/", true), 1, true)
+	assertLikeState(t, sendLike(a, nil, "post", "/posts/shared/", true), 2, true)
+	assertLikeState(t, sendLike(a, legacy.Result().Cookies()[0], "post", "/posts/eski/", false), 0, false)
+	if w := sendLike(a, nil, "post", "/posts/missing/", true); w.Code != http.StatusNotFound {
+		t.Fatalf("missing post: %d", w.Code)
+	}
+	summary, err := a.likesSummary()
+	if err != nil || summary.Total != 2 || len(summary.Content) != 1 || summary.Content[0].Title != "Root title" {
+		t.Fatalf("shared count or title priority broken: %+v %v", summary, err)
+	}
+
+	// A broken Turkish manifest cannot prove absence, but must not block posts found elsewhere.
+	mu.Lock()
+	manifests["/tr/like-targets.json"] = `[{"kind":"post"`
+	mu.Unlock()
+	a = &app{dataDir: t.TempDir(), password: "secret"}
+	if w := sendLike(a, nil, "post", "/posts/eski/", true); w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("broken manifest: %d", w.Code)
+	}
+	assertLikeState(t, sendLike(a, nil, "post", "/posts/shared/", true), 1, true)
+
+	server.Close()
+	a = &app{dataDir: t.TempDir(), password: "secret"}
+	if w := sendLike(a, nil, "post", "/posts/shared/", true); w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("network failure: %d", w.Code)
+	}
+}
+
 func TestConcurrentLikesDoNotLoseCounts(t *testing.T) {
 	a := likesTestApp(t)
 	var wg sync.WaitGroup
