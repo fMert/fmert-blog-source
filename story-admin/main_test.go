@@ -249,8 +249,8 @@ func TestCreatePostWritesMarkdownAndPublishTrigger(t *testing.T) {
 		t.Fatalf("create post returned %d: %s", w.Code, w.Body.String())
 	}
 	var result struct {
-		File, URL string
-		Metadata  PostMetadata
+		ID, File, URL string
+		Metadata      PostMetadata
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
 		t.Fatal(err)
@@ -259,7 +259,7 @@ func TestCreatePostWritesMarkdownAndPublishTrigger(t *testing.T) {
 		t.Fatalf("inconsistent response: %+v", result)
 	}
 	postsDir := filepath.Join(dataDir, "posts")
-	trigger, err := os.ReadFile(filepath.Join(postsDir, ".publish-trigger"))
+	trigger, err := os.ReadFile(filepath.Join(postsDir, ".publish-jobs", result.ID, "request"))
 	if err != nil {
 		t.Fatalf("publish trigger missing: %v", err)
 	}
@@ -307,20 +307,35 @@ func TestCreatePostRetriesFailedFileWithoutDuplicate(t *testing.T) {
 		return w
 	}
 
-	if w := create(); w.Code != http.StatusOK {
-		t.Fatalf("first create returned %d: %s", w.Code, w.Body.String())
+	first := create()
+	if first.Code != http.StatusOK {
+		t.Fatalf("first create returned %d: %s", first.Code, first.Body.String())
+	}
+	var result PostPublishStatus
+	if err := json.Unmarshal(first.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
 	}
 	postsDir := filepath.Join(dataDir, "posts")
-	trigger, err := os.ReadFile(filepath.Join(postsDir, ".publish-trigger"))
-	if err != nil {
+	statusPath := filepath.Join(postsDir, ".publish-jobs", result.ID, "status")
+	result.State = "failed"
+	if err := writeJSONAtomic(statusPath, result); err != nil {
 		t.Fatal(err)
 	}
-	filename := strings.TrimSpace(string(trigger))
-	if err := writeJSONAtomic(filepath.Join(postsDir, ".publish-status"), PostPublishStatus{State: "failed", File: filename}); err != nil {
+	values.Set("retry_id", result.ID)
+	retry := create()
+	if retry.Code != http.StatusOK {
+		t.Fatalf("retry returned %d: %s", retry.Code, retry.Body.String())
+	}
+	var retried PostPublishStatus
+	if err := json.Unmarshal(retry.Body.Bytes(), &retried); err != nil {
 		t.Fatal(err)
 	}
-	if w := create(); w.Code != http.StatusOK {
-		t.Fatalf("retry returned %d: %s", w.Code, w.Body.String())
+	if !validPublishID(retried.ID) || retried.ID == result.ID || retried.File != result.File {
+		t.Fatalf("retry must use a new operation for the same file: %+v / %+v", result, retried)
+	}
+	previous, err := os.ReadFile(statusPath)
+	if err != nil || !strings.Contains(string(previous), `"state":"failed"`) {
+		t.Fatalf("retry overwrote the original result: %s, %v", previous, err)
 	}
 	posts, err := filepath.Glob(filepath.Join(postsDir, "eo", "*.md"))
 	if err != nil || len(posts) != 1 {
@@ -345,7 +360,11 @@ func TestCreatePostPublishesAllThreeLanguages(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("create post returned %d: %s", w.Code, w.Body.String())
 	}
-	trigger, err := os.ReadFile(filepath.Join(dataDir, "posts", ".publish-trigger"))
+	var result PostPublishStatus
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	trigger, err := os.ReadFile(filepath.Join(dataDir, "posts", ".publish-jobs", result.ID, "request"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,8 +424,8 @@ func TestCreatePostReservesURLsAcrossLanguagesAndConcurrentRequests(t *testing.T
 			for i := 0; i < 2; i++ {
 				w := <-results
 				var result struct {
-					File, URL string
-					Metadata  PostMetadata
+					ID, File, URL string
+					Metadata      PostMetadata
 				}
 				if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &result) != nil {
 					t.Fatalf("create failed: %d %s", w.Code, w.Body.String())
@@ -476,7 +495,7 @@ func TestCreatePostRejectsUnavailableInventory(t *testing.T) {
 					t.Fatalf("unexpected %s posts: %+v, %v", language, posts, err)
 				}
 			}
-			if _, err := os.Stat(filepath.Join(a.postsDir(), ".publish-trigger")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(a.postsDir(), ".publish-jobs")); !os.IsNotExist(err) {
 				t.Fatalf("publish was triggered: %v", err)
 			}
 		})

@@ -6,4 +6,7 @@ After=docker.service network-online.target
 [Service]
 Type=oneshot
 ExecStart=/opt/apps/fmert-blog/source/deploy/publish-posts.sh
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=infinity
 Nice=5

@@ -2,7 +2,8 @@
 Description=fmert.me yönetim paneli yazı yayın kuyruğu
 
 [Path]
-PathChanged=/opt/apps/fmert-blog/source/deploy/data/posts/.publish-trigger
+PathExistsGlob=/opt/apps/fmert-blog/source/deploy/data/posts/.publish-jobs/*/request
+PathExists=/opt/apps/fmert-blog/source/deploy/data/posts/.publish-trigger
 Unit=fmert-blog-post-publish.service
 
 [Install]

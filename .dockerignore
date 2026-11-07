@@ -6,5 +6,7 @@ deploy/data/*
 !deploy/data/posts/**
 deploy/data/posts/.publish-trigger
 deploy/data/posts/.publish-status
+deploy/data/posts/.publish-jobs
+deploy/data/posts/.publish-request-*
 deploy/.env
 design_handoff_blog_stories

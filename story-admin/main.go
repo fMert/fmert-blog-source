@@ -64,6 +64,7 @@ type PostMetadata struct {
 }
 
 type PostPublishStatus struct {
+	ID      string `json:"id"`
 	State   string `json:"state"`
 	File    string `json:"file,omitempty"`
 	Message string `json:"message,omitempty"`
@@ -461,7 +462,16 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Yazı dizini oluşturulamadı", http.StatusInternalServerError)
 		return
 	}
-	filename := failedPostFilename(primaryDir, title, body)
+	retryID := r.FormValue("retry_id")
+	if retryID != "" && !validPublishID(retryID) {
+		http.Error(w, "Geçersiz yayın kimliği", http.StatusBadRequest)
+		return
+	}
+	filename := failedPostFilename(primaryDir, retryID, title, body)
+	if retryID != "" && filename == "" {
+		http.Error(w, "Başarısız yayın bulunamadı veya içerik değişti", http.StatusConflict)
+		return
+	}
 	newPost := filename == ""
 	if filename == "" {
 		usedURLs := make(map[string]bool)
@@ -525,15 +535,8 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	status := PostPublishStatus{State: "queued", File: filename, Message: "Yazı yayın kuyruğunda", Updated: time.Now().UTC().Format(time.RFC3339)}
-	if err := writeJSONAtomic(filepath.Join(postsDir, ".publish-status"), status); err != nil {
-		http.Error(w, "Yayın durumu kaydedilemedi", http.StatusInternalServerError)
-		return
-	}
-	if err := os.WriteFile(filepath.Join(postsDir, ".publish-trigger"), []byte(filename+"\n"), 0644); err != nil {
-		status.State = "failed"
-		status.Message = "Yayın işlemi başlatılamadı"
-		_ = writeJSONAtomic(filepath.Join(postsDir, ".publish-status"), status)
+	id, err := enqueuePost(postsDir, filename)
+	if err != nil {
 		http.Error(w, "Yayın işlemi başlatılamadı", http.StatusInternalServerError)
 		return
 	}
@@ -541,11 +544,12 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(struct {
+		ID       string       `json:"id"`
 		OK       bool         `json:"ok"`
 		File     string       `json:"file"`
 		URL      string       `json:"url"`
 		Metadata PostMetadata `json:"metadata"`
-	}{true, filename, postURL(filename), metadata})
+	}{id, true, filename, postURL(filename), metadata})
 }
 
 func localizedCategory(category, language string) string {
@@ -586,9 +590,14 @@ func (a *app) postStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	b, err := os.ReadFile(filepath.Join(a.postsDir(), ".publish-status"))
+	id := r.URL.Query().Get("id")
+	if !validPublishID(id) {
+		http.Error(w, "Geçersiz yayın kimliği", http.StatusBadRequest)
+		return
+	}
+	b, err := os.ReadFile(filepath.Join(a.postsDir(), ".publish-jobs", id, "status"))
 	if errors.Is(err, os.ErrNotExist) {
-		json.NewEncoder(w).Encode(PostPublishStatus{State: "idle"})
+		http.Error(w, "Yayın bulunamadı", http.StatusNotFound)
 		return
 	}
 	if err != nil {
@@ -784,13 +793,57 @@ func uniquePostFilename(postsDir, datePrefix, slug string, usedURLs map[string]b
 	}
 }
 
-func failedPostFilename(dir, title, body string) string {
-	b, err := os.ReadFile(filepath.Join(filepath.Dir(dir), ".publish-status"))
+func validPublishID(id string) bool {
+	if len(id) != 32 {
+		return false
+	}
+	for _, c := range id {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+func enqueuePost(postsDir, filename string) (string, error) {
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return "", err
+	}
+	id := hex.EncodeToString(random[:])
+	jobs := filepath.Join(postsDir, ".publish-jobs")
+	if err := os.MkdirAll(jobs, 0755); err != nil {
+		return "", err
+	}
+	staging, err := os.MkdirTemp(postsDir, ".publish-request-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(staging)
+	status := PostPublishStatus{ID: id, State: "queued", File: filename, Message: "Yazı yayın kuyruğunda", Updated: time.Now().UTC().Format(time.RFC3339)}
+	if err := writeJSONAtomic(filepath.Join(staging, "status"), status); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(filepath.Join(staging, "request"), []byte(filename+"\n"), 0644); err != nil {
+		return "", err
+	}
+	// The directory rename accepts the status and durable trigger together.
+	if err := os.Rename(staging, filepath.Join(jobs, id)); err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+func failedPostFilename(dir, id, title, body string) string {
+	if !validPublishID(id) {
+		return ""
+	}
+	b, err := os.ReadFile(filepath.Join(filepath.Dir(dir), ".publish-jobs", id, "status"))
 	if err != nil {
 		return ""
 	}
 	var status PostPublishStatus
-	if json.Unmarshal(b, &status) != nil || status.State != "failed" || filepath.Base(status.File) != status.File || !strings.HasSuffix(status.File, ".md") {
+	if json.Unmarshal(b, &status) != nil || status.ID != id || status.State != "failed" || filepath.Base(status.File) != status.File || !strings.HasSuffix(status.File, ".md") {
 		return ""
 	}
 	b, err = os.ReadFile(filepath.Join(dir, status.File))
@@ -1213,6 +1266,7 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       var state=document.getElementById('post-state');
       var draftKey='fmert-post-draft-v1';
       var metadataTimer=0;
+      var retryID='',activeID='';
 
       function escapeHTML(value){return value.replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]})}
       function inlineMarkdown(value){
@@ -1260,26 +1314,29 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
       }
       function showError(message){error.textContent=message;error.classList.add('show');publish.disabled=false;publish.textContent='Yazıyı yayınla'}
       function showState(message,type){state.className='publish-state show'+(type?' '+type:'');state.innerHTML=message}
-      function pollStatus(file,url,attempt){
+      function pollStatus(id,url,attempt){
+        if(id!==activeID)return;
         if(attempt>90){showState('Yazı kaydedildi ancak yayınlama beklenenden uzun sürüyor. Biraz sonra siteyi kontrol edebilirsin.','');publish.disabled=false;publish.textContent='Yazıyı yayınla';return}
-        fetch('/stories-api/posts/status',{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error();return response.json()}).then(function(data){
-          if(data.file===file&&data.state==='published'){showState('Yazı yayında. <a href="'+url+'" target="_blank" rel="noopener">Yazıyı aç ↗</a>','success');publish.disabled=false;publish.textContent='Yayınlandı';return}
-          if(data.file===file&&data.state==='failed'){showState(escapeHTML(data.message||'Yayınlama sırasında bir sorun oluştu.'),'error');publish.disabled=false;publish.textContent='Yeniden dene';return}
-          showState(escapeHTML(data.message||'Blog hazırlanıyor…'),'');setTimeout(function(){pollStatus(file,url,attempt+1)},1000);
-        }).catch(function(){setTimeout(function(){pollStatus(file,url,attempt+1)},1500)});
+        fetch('/stories-api/posts/status?id='+encodeURIComponent(id),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error();return response.json()}).then(function(data){
+          if(id!==activeID||data.id!==id)return;
+          if(data.state==='published'){showState('Yazı yayında. <a href="'+url+'" target="_blank" rel="noopener">Yazıyı aç ↗</a>','success');publish.disabled=false;publish.textContent='Yayınlandı';return}
+          if(data.state==='failed'){retryID=id;showState(escapeHTML(data.message||'Yayınlama sırasında bir sorun oluştu.'),'error');publish.disabled=false;publish.textContent='Yeniden dene';return}
+          showState(escapeHTML(data.message||'Blog hazırlanıyor…'),'');setTimeout(function(){pollStatus(id,url,attempt+1)},1000);
+        }).catch(function(){setTimeout(function(){pollStatus(id,url,attempt+1)},1500)});
       }
 
       try{var draft=JSON.parse(localStorage.getItem(draftKey)||'null');if(draft)Object.keys(draft).forEach(function(name){if(form.elements[name])form.elements[name].value=draft[name]||''})}catch(e){}
       document.getElementById('post-preview-date').textContent=new Date().toLocaleDateString(window.adminLang==='eo'?'eo':window.adminLang==='en'?'en-GB':'tr-TR',{day:'numeric',month:'long',year:'numeric'});
-      form.addEventListener('input',function(){error.classList.remove('show');syncPreview()});
+      form.addEventListener('input',function(){retryID='';error.classList.remove('show');syncPreview()});
       document.querySelectorAll('.markdown-tool').forEach(function(button){button.addEventListener('click',function(){
         var start=body.selectionStart,end=body.selectionEnd,before=button.dataset.before.split('\\n').join('\n'),after=button.dataset.after.split('\\n').join('\n'),selected=body.value.slice(start,end);
         body.setRangeText(before+selected+after,start,end,'end');body.focus();syncPreview();
       })});
       form.addEventListener('submit',function(event){
         event.preventDefault();error.classList.remove('show');state.className='publish-state';publish.disabled=true;publish.textContent='Kaydediliyor…';
-        fetch(form.action,{method:'POST',body:new URLSearchParams(new FormData(form))}).then(function(response){if(!response.ok)return response.text().then(function(message){throw new Error(message.trim())});return response.json()}).then(function(data){
-          try{localStorage.removeItem(draftKey)}catch(e){}publish.textContent='Yayınlanıyor…';showState('Yazı kaydedildi, blog hazırlanıyor…','');pollStatus(data.file,(window.adminLang==='eo'?'':'/'+window.adminLang)+data.url,0);
+        activeID='';var values=new URLSearchParams(new FormData(form));if(retryID)values.set('retry_id',retryID);
+        fetch(form.action,{method:'POST',body:values}).then(function(response){if(!response.ok)return response.text().then(function(message){throw new Error(message.trim())});return response.json()}).then(function(data){
+          try{localStorage.removeItem(draftKey)}catch(e){}publish.textContent='Yayınlanıyor…';showState('Yazı kaydedildi, blog hazırlanıyor…','');activeID=data.id;retryID='';pollStatus(data.id,(window.adminLang==='eo'?'':'/'+window.adminLang)+data.url,0);
         }).catch(function(reason){showError(reason.message||'Yazı kaydedilemedi.')});
       });
       syncPreview();
