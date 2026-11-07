@@ -124,17 +124,8 @@ func (a *app) findLikeTarget(kind, id string) (LikeTarget, error) {
 	a.targetMu.Lock()
 	defer a.targetMu.Unlock()
 	if time.Since(a.targetsUpdated) > time.Minute {
-		client := &http.Client{Timeout: 3 * time.Second}
-		response, err := client.Get(strings.TrimRight(env("BLOG_ORIGIN", "http://blog:8080"), "/") + "/like-targets.json")
+		targets, err := fetchLikeTargets("")
 		if err != nil {
-			return LikeTarget{}, err
-		}
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusOK {
-			return LikeTarget{}, fmt.Errorf("content manifest returned %d", response.StatusCode)
-		}
-		var targets []LikeTarget
-		if err := json.NewDecoder(io.LimitReader(response.Body, 2<<20)).Decode(&targets); err != nil {
 			return LikeTarget{}, err
 		}
 		a.targets = targets
@@ -146,6 +137,35 @@ func (a *app) findLikeTarget(kind, id string) (LikeTarget, error) {
 		}
 	}
 	return LikeTarget{}, os.ErrNotExist
+}
+
+func fetchLikeTargets(prefix string) ([]LikeTarget, error) {
+	client := &http.Client{Timeout: 3 * time.Second}
+	response, err := client.Get(strings.TrimRight(env("BLOG_ORIGIN", "http://blog:8080"), "/") + prefix + "/like-targets.json")
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("content manifest returned %d", response.StatusCode)
+	}
+	b, err := io.ReadAll(io.LimitReader(response.Body, 2<<20))
+	if err != nil {
+		return nil, err
+	}
+	var targets []LikeTarget
+	if err := json.Unmarshal(b, &targets); err != nil {
+		return nil, err
+	}
+	if targets == nil {
+		return nil, errors.New("missing content manifest")
+	}
+	for _, target := range targets {
+		if (target.Kind != "post" && target.Kind != "story") || target.ID == "" {
+			return nil, errors.New("invalid content manifest entry")
+		}
+	}
+	return targets, nil
 }
 
 func (a *app) likePath(kind, id string) string {

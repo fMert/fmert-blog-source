@@ -87,8 +87,8 @@ func TestPostFilenameAvoidsEveryLanguageAndLegacy(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	filename, err := uniquePostFilename(dir, "2026-11-04", "example")
-	if err != nil || filename != "2026-11-04-example-5.md" {
+	filename, err := uniquePostFilename(dir, "2026-11-07", "example", map[string]bool{})
+	if err != nil || filename != "2026-11-07-example-5.md" {
 		t.Fatalf("unexpected filename %q: %v", filename, err)
 	}
 }
@@ -229,6 +229,7 @@ func TestInferPostMetadata(t *testing.T) {
 }
 
 func TestCreatePostWritesMarkdownAndPublishTrigger(t *testing.T) {
+	stubPostInventory(t, nil)
 	dataDir := t.TempDir()
 	a := &app{dataDir: dataDir, password: "secret"}
 	values := url.Values{
@@ -246,6 +247,16 @@ func TestCreatePostWritesMarkdownAndPublishTrigger(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("create post returned %d: %s", w.Code, w.Body.String())
+	}
+	var result struct {
+		File, URL string
+		Metadata  PostMetadata
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Metadata.Slug != "terminal-icin-kucuk-bir-proje" || result.URL != "/posts/"+result.Metadata.Slug+"/" || result.URL != postURL(result.File) {
+		t.Fatalf("inconsistent response: %+v", result)
 	}
 	postsDir := filepath.Join(dataDir, "posts")
 	trigger, err := os.ReadFile(filepath.Join(postsDir, ".publish-trigger"))
@@ -277,6 +288,9 @@ func TestPostMetadataListsAlwaysQuoteNumericTags(t *testing.T) {
 }
 
 func TestCreatePostRetriesFailedFileWithoutDuplicate(t *testing.T) {
+	stubPostInventory(t, map[string]string{
+		"/like-targets.json": `[{"kind":"post","id":"/posts/teknofest-2026-finali/","title":"Source post"}]`,
+	})
 	dataDir := t.TempDir()
 	a := &app{dataDir: dataDir, password: "secret"}
 	values := url.Values{"title": {"TEKNOFEST 2026 finali"}, "body": {"La sama afiŝo estos reprovitaj."}, "title_en": {"TEKNOFEST 2026 final"}, "body_en": {"The same post will be retried."}, "title_tr": {"TEKNOFEST 2026 finali"}, "body_tr": {"Aynı yazı yeniden denenecek."}}
@@ -287,6 +301,9 @@ func TestCreatePostRetriesFailedFileWithoutDuplicate(t *testing.T) {
 		r.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
 		w := httptest.NewRecorder()
 		a.createPost(w, r)
+		if w.Code == http.StatusOK && !strings.Contains(w.Body.String(), `"slug":"teknofest-2026-finali-2"`) {
+			t.Fatalf("expected the reserved slug in the response: %s", w.Body.String())
+		}
 		return w
 	}
 
@@ -312,6 +329,7 @@ func TestCreatePostRetriesFailedFileWithoutDuplicate(t *testing.T) {
 }
 
 func TestCreatePostPublishesAllThreeLanguages(t *testing.T) {
+	stubPostInventory(t, nil)
 	dataDir := t.TempDir()
 	a := &app{dataDir: dataDir, password: "secret"}
 	values := url.Values{
@@ -337,5 +355,130 @@ func TestCreatePostPublishesAllThreeLanguages(t *testing.T) {
 		if err != nil || !strings.Contains(string(content), expected) {
 			t.Fatalf("%s translation missing: %v", language, err)
 		}
+	}
+}
+
+func stubPostInventory(t *testing.T, manifests map[string]string) {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/like-targets.json" && r.URL.Path != "/en/like-targets.json" && r.URL.Path != "/tr/like-targets.json" {
+			http.NotFound(w, r)
+			return
+		}
+		body, ok := manifests[r.URL.Path]
+		if !ok {
+			body = "[]"
+		}
+		fmt.Fprint(w, body)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("BLOG_ORIGIN", server.URL)
+}
+
+func TestCreatePostReservesURLsAcrossLanguagesAndConcurrentRequests(t *testing.T) {
+	for _, prefix := range []string{"", "/en", "/tr"} {
+		t.Run("source="+prefix, func(t *testing.T) {
+			stubPostInventory(t, map[string]string{
+				prefix + "/like-targets.json": `[{"kind":"post","id":"/posts/example/","title":"Source post"}]`,
+			})
+			a := &app{dataDir: t.TempDir(), password: "secret"}
+			values := url.Values{
+				"title": {"Example"}, "body": {"Body"},
+				"title_en": {"English title"}, "body_en": {"English body"},
+				"title_tr": {"Türkçe başlık"}, "body_tr": {"Türkçe içerik"},
+			}
+			start := make(chan struct{})
+			results := make(chan *httptest.ResponseRecorder, 2)
+			for i := 0; i < 2; i++ {
+				go func() {
+					<-start
+					r := httptest.NewRequest("POST", "/stories-api/posts", strings.NewReader(values.Encode()))
+					r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+					r.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+					w := httptest.NewRecorder()
+					a.createPost(w, r)
+					results <- w
+				}()
+			}
+			close(start)
+			seen := make(map[string]bool)
+			for i := 0; i < 2; i++ {
+				w := <-results
+				var result struct {
+					File, URL string
+					Metadata  PostMetadata
+				}
+				if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &result) != nil {
+					t.Fatalf("create failed: %d %s", w.Code, w.Body.String())
+				}
+				if seen[result.URL] || (result.URL != "/posts/example-2/" && result.URL != "/posts/example-3/") {
+					t.Fatalf("unexpected or duplicate URL: %s", result.URL)
+				}
+				seen[result.URL] = true
+				if result.URL != "/posts/"+result.Metadata.Slug+"/" || postURL(result.File) != result.URL {
+					t.Fatalf("inconsistent response: %+v", result)
+				}
+				for _, language := range []string{"eo", "en", "tr"} {
+					posts, err := a.loadManagedPosts(language)
+					if err != nil {
+						t.Fatal(err)
+					}
+					found := false
+					for _, post := range posts {
+						if post.File == result.File && strings.HasSuffix(post.URL, result.URL) {
+							found = true
+						}
+					}
+					if !found {
+						t.Fatalf("%s output missing for %+v", language, result)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestCreatePostRejectsUnavailableInventory(t *testing.T) {
+	for _, tc := range []struct {
+		body   string
+		status int
+	}{
+		{"", 200}, {"null", 200}, {"{}", 200}, {"[{}]", 200}, {"[{", 200}, {"[] garbage", 200},
+		{"[]", 404}, {"[]", 503}, {"offline", 0},
+	} {
+		t.Run(fmt.Sprintf("%d/%s", tc.status, tc.body), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/tr/like-targets.json" {
+					w.WriteHeader(tc.status)
+					fmt.Fprint(w, tc.body)
+					return
+				}
+				fmt.Fprint(w, "[]")
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("BLOG_ORIGIN", server.URL)
+			if tc.status == 0 {
+				server.Close()
+			}
+			a := &app{dataDir: t.TempDir(), password: "secret"}
+			values := url.Values{"title": {"Example"}, "body": {"Body"}, "title_en": {"Example"}, "body_en": {"Body"}, "title_tr": {"Example"}, "body_tr": {"Body"}}
+			request := httptest.NewRequest("POST", "/stories-api/posts", strings.NewReader(values.Encode()))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			request.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+			w := httptest.NewRecorder()
+			a.createPost(w, request)
+			if w.Code != http.StatusServiceUnavailable {
+				t.Fatalf("expected unavailable inventory, got %d: %s", w.Code, w.Body.String())
+			}
+			for _, language := range []string{"eo", "en", "tr"} {
+				posts, err := a.loadManagedPosts(language)
+				if err != nil || len(posts) != 0 {
+					t.Fatalf("unexpected %s posts: %+v, %v", language, posts, err)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(a.postsDir(), ".publish-trigger")); !os.IsNotExist(err) {
+				t.Fatalf("publish was triggered: %v", err)
+			}
+		})
 	}
 }

@@ -464,13 +464,29 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 	filename := failedPostFilename(primaryDir, title, body)
 	newPost := filename == ""
 	if filename == "" {
+		usedURLs := make(map[string]bool)
+		// Read every language afresh: the Go container has no source _posts tree.
+		for _, prefix := range []string{"", "/en", "/tr"} {
+			targets, err := fetchLikeTargets(prefix)
+			if err != nil {
+				log.Printf("post URL inventory: %v", err)
+				http.Error(w, "Kaynak yazı envanteri okunamadı; yeniden deneyin", http.StatusServiceUnavailable)
+				return
+			}
+			for _, target := range targets {
+				if target.Kind == "post" {
+					usedURLs[target.ID] = true
+				}
+			}
+		}
 		var err error
-		filename, err = uniquePostFilename(postsDir, datePrefix, metadata.Slug)
+		filename, err = uniquePostFilename(postsDir, datePrefix, metadata.Slug, usedURLs)
 		if err != nil {
 			http.Error(w, "Yazı dosyası hazırlanamadı", http.StatusInternalServerError)
 			return
 		}
 	}
+	metadata.Slug = strings.TrimSuffix(strings.TrimPrefix(postURL(filename), "/posts/"), "/")
 	queued := false
 	var temporaryFiles []string
 	defer func() {
@@ -743,20 +759,25 @@ func slugify(value string) string {
 	return slug
 }
 
-func uniquePostFilename(postsDir, datePrefix, slug string) (string, error) {
+func uniquePostFilename(postsDir, datePrefix, slug string, usedURLs map[string]bool) (string, error) {
+	for _, language := range []string{"", "eo", "en", "tr"} {
+		entries, err := os.ReadDir(filepath.Join(postsDir, language))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		for _, entry := range entries {
+			if strings.HasSuffix(entry.Name(), ".md") {
+				usedURLs[postURL(entry.Name())] = true
+			}
+		}
+	}
 	base := datePrefix + "-" + slug
 	filename := base + ".md"
 	for i := 2; ; i++ {
-		available := true
-		for _, language := range []string{"", "eo", "en", "tr"} {
-			if _, err := os.Stat(filepath.Join(postsDir, language, filename)); err == nil {
-				available = false
-				break
-			} else if !errors.Is(err, os.ErrNotExist) {
-				return "", err
-			}
-		}
-		if available {
+		if !usedURLs[postURL(filename)] {
 			return filename, nil
 		}
 		filename = fmt.Sprintf("%s-%d.md", base, i)
