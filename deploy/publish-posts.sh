@@ -14,10 +14,17 @@ flock 9
 
 write_status() {
   local state=$1 file=$2 message=$3 temporary
-  temporary="$STATUS.tmp"
-  printf '{"state":"%s","file":"%s","message":"%s","updated":"%s"}\n' \
-    "$state" "$file" "$message" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$temporary"
-  mv "$temporary" "$STATUS"
+  temporary=$(mktemp "$STATUS.tmp.XXXXXX") || return
+  if printf '{"state":"%s","file":"%s","message":"%s","updated":"%s"}\n' \
+    "$state" "$file" "$message" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$temporary" &&
+    chmod =rw -- "$temporary" &&
+    mv -T -- "$temporary" "$STATUS"; then
+    return 0
+  else
+    local result=$?
+    rm -f -- "$temporary"
+    return "$result"
+  fi
 }
 
 if [[ ! -s "$TRIGGER" ]]; then
