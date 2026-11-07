@@ -412,14 +412,36 @@ func (a *app) postsDir() string {
 	return filepath.Join(a.dataDir, "posts")
 }
 
+const (
+	maxPostTitleRunes = 160
+	maxPostBodyRunes  = 200000
+	// URL encoding writes a rune as at most 12 bytes (4 UTF-8 bytes as %XX);
+	// three titles and bodies plus room for field names and retry_id.
+	maxPostRequestBytes = 3*(maxPostTitleRunes+maxPostBodyRunes)*12 + 64<<10
+)
+
+// parsePostForm bounds the URL-encoded body by the worst case of the field limits.
+func parsePostForm(w http.ResponseWriter, r *http.Request, message string) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, maxPostRequestBytes)
+	err := r.ParseForm()
+	var tooLarge *http.MaxBytesError
+	if errors.As(err, &tooLarge) {
+		http.Error(w, "Yazı isteği izin verilen toplam boyutu aşıyor; içeriği kısaltın", http.StatusRequestEntityTooLarge)
+		return false
+	}
+	if err != nil {
+		http.Error(w, message, http.StatusBadRequest)
+		return false
+	}
+	return true
+}
+
 func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 	if !a.authorized(r) {
 		http.Error(w, "Oturum süresi doldu", http.StatusUnauthorized)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Yazı verileri okunamadı", http.StatusBadRequest)
+	if !parsePostForm(w, r, "Yazı verileri okunamadı") {
 		return
 	}
 	title := strings.TrimSpace(r.FormValue("title"))
@@ -429,17 +451,17 @@ func (a *app) createPost(w http.ResponseWriter, r *http.Request) {
 		"en": {strings.TrimSpace(r.FormValue("title_en")), strings.TrimSpace(r.FormValue("body_en"))},
 		"tr": {strings.TrimSpace(r.FormValue("title_tr")), strings.TrimSpace(r.FormValue("body_tr"))},
 	}
-	if title == "" || len([]rune(title)) > 160 {
+	if title == "" || len([]rune(title)) > maxPostTitleRunes {
 		http.Error(w, "Başlık zorunludur ve en fazla 160 karakter olabilir", http.StatusBadRequest)
 		return
 	}
-	if body == "" || len([]rune(body)) > 200000 {
+	if body == "" || len([]rune(body)) > maxPostBodyRunes {
 		http.Error(w, "Markdown içeriği zorunludur ve en fazla 200.000 karakter olabilir", http.StatusBadRequest)
 		return
 	}
 	for _, language := range []string{"en", "tr"} {
 		post := translations[language]
-		if post.title == "" || len([]rune(post.title)) > 160 || post.body == "" || len([]rune(post.body)) > 200000 {
+		if post.title == "" || len([]rune(post.title)) > maxPostTitleRunes || post.body == "" || len([]rune(post.body)) > maxPostBodyRunes {
 			http.Error(w, "Her dilde başlık ve içerik gereklidir", http.StatusBadRequest)
 			return
 		}
@@ -571,9 +593,7 @@ func (a *app) postMetadata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Oturum süresi doldu", http.StatusUnauthorized)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "İçerik okunamadı", http.StatusBadRequest)
+	if !parsePostForm(w, r, "İçerik okunamadı") {
 		return
 	}
 	metadata := inferPostMetadata(r.FormValue("title"), r.FormValue("body"))

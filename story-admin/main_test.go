@@ -110,6 +110,47 @@ func TestPostMetadataUsesSelectedLanguage(t *testing.T) {
 	}
 }
 
+func TestPostRequestLimitFitsWorstCaseFields(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("[]")) }))
+	defer server.Close()
+	t.Setenv("BLOG_ORIGIN", server.URL)
+	a := &app{dataDir: t.TempDir(), password: "secret"}
+	send := func(handler http.HandlerFunc, values url.Values) *httptest.ResponseRecorder {
+		r := httptest.NewRequest("POST", "/stories-api/posts", strings.NewReader(values.Encode()))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.AddCookie(&http.Cookie{Name: "story_session", Value: a.sessionToken()})
+		w := httptest.NewRecorder()
+		handler(w, r)
+		return w
+	}
+	// 4-byte runes are the URL-encoding worst case: 12 bytes each.
+	title := "Uzun" + strings.Repeat("😀", maxPostTitleRunes-4)
+	body := strings.Repeat("😀", maxPostBodyRunes)
+	values := url.Values{"title": {title}, "body": {body}, "title_en": {title}, "body_en": {body}, "title_tr": {title}, "body_tr": {body}}
+	if w := send(a.createPost, values); w.Code != http.StatusOK {
+		t.Fatalf("max-size post rejected: %d %s", w.Code, w.Body.String())
+	}
+	files, _ := filepath.Glob(filepath.Join(a.postsDir(), "*", "*.md"))
+	if len(files) != 3 {
+		t.Fatalf("expected three language files, got %v", files)
+	}
+	values.Set("lang", "en")
+	if w := send(a.postMetadata, values); w.Code != http.StatusOK {
+		t.Fatalf("max-size metadata rejected: %d %s", w.Code, w.Body.String())
+	}
+
+	tooLong := url.Values{"title": {"a"}, "body": {"a"}, "title_en": {"a"}, "body_en": {strings.Repeat("a", maxPostBodyRunes+1)}, "title_tr": {"a"}, "body_tr": {"a"}}
+	if w := send(a.createPost, tooLong); w.Code != http.StatusBadRequest {
+		t.Fatalf("over-long field accepted: %d", w.Code)
+	}
+	values.Set("padding", strings.Repeat("a", maxPostRequestBytes))
+	for _, handler := range []http.HandlerFunc{a.createPost, a.postMetadata} {
+		if w := send(handler, values); w.Code != http.StatusRequestEntityTooLarge || !strings.Contains(w.Body.String(), "toplam boyutu") {
+			t.Fatalf("oversized body: %d %s", w.Code, w.Body.String())
+		}
+	}
+}
+
 func TestLocalizedStoriesKeepLegacyTurkishOnly(t *testing.T) {
 	stories := []Story{
 		{ID: "old", Text: "Eski"},
