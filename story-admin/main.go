@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 //go:embed admin-i18n.js
@@ -254,7 +255,7 @@ func (a *app) create(w http.ResponseWriter, r *http.Request) {
 	for _, language := range []string{"en", "tr"} {
 		translation := s.Translations[language]
 		if err := validate(Story{Type: s.Type, Text: translation.Text, Title: translation.Title, Subtext: translation.Subtext, LinkLabel: translation.LinkLabel}); err != nil {
-			http.Error(w, "Her dilde metin gereklidir", http.StatusBadRequest)
+			http.Error(w, language+" çevirisi: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
@@ -922,8 +923,14 @@ func validate(s Story) error {
 	if s.Type != "text" && s.Type != "image" && s.Type != "link" {
 		return errors.New("geçersiz hikâye türü")
 	}
-	if s.Text == "" || len(s.Text) > 1000 || len(s.Title) > 120 || len(s.Subtext) > 1000 || len(s.BG) > 500 || len(s.LinkLabel) > 80 {
-		return errors.New("zorunlu metin eksik veya alanlardan biri çok uzun")
+	if s.Text == "" {
+		return errors.New("ana metin zorunludur")
+	}
+	if textLen(s.Text) > 1000 || textLen(s.Title) > 120 || textLen(s.Subtext) > 1000 || textLen(s.LinkLabel) > 80 {
+		return errors.New("metin çok uzun: ana metin ve alt metin en fazla 1000, başlık 120, düğme metni 80 karakter olabilir")
+	}
+	if len(s.BG) > 500 {
+		return errors.New("arka plan en fazla 500 bayt olabilir")
 	}
 	if s.Link != "" {
 		u, err := url.Parse(s.Link)
@@ -932,6 +939,12 @@ func validate(s Story) error {
 		}
 	}
 	return nil
+}
+
+// textLen counts user text in Unicode code points, matching Array.from(value).length
+// in the admin form. Browsers submit textarea newlines as CRLF, so count them once.
+func textLen(s string) int {
+	return utf8.RuneCountInString(s) - strings.Count(s, "\r\n")
 }
 
 func saveImage(dir, id string, src io.Reader, size int64) (string, error) {
@@ -1163,10 +1176,10 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
         <div class="fields">
           <label class="field">
             <span class="label-row"><span class="label">Ana metin</span><span class="counter"><b id="text-count">0</b>/1000</span></span>
-            <textarea class="control" id="text" name="text" required maxlength="1000" placeholder="Ne paylaşmak istiyorsun?"></textarea>
+            <textarea class="control" id="text" name="text" required data-maxchars="1000" placeholder="Ne paylaşmak istiyorsun?"></textarea>
           </label>
-          <label class="field"><span class="label">English · main text</span><textarea class="control" name="text_en" required maxlength="1000" placeholder="What would you like to share?"></textarea></label>
-          <label class="field"><span class="label">Türkçe · ana metin</span><textarea class="control" name="text_tr" required maxlength="1000" placeholder="Ne paylaşmak istiyorsun?"></textarea></label>
+          <label class="field"><span class="label">English · main text</span><textarea class="control" name="text_en" required data-maxchars="1000" placeholder="What would you like to share?"></textarea></label>
+          <label class="field"><span class="label">Türkçe · ana metin</span><textarea class="control" name="text_tr" required data-maxchars="1000" placeholder="Ne paylaşmak istiyorsun?"></textarea></label>
 
           <div class="field" data-types="image" hidden>
             <span class="label">Fotoğraf</span>
@@ -1189,24 +1202,24 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
 
           <div class="two-col" data-types="link" hidden>
             <label class="field"><span class="label">Bağlantı</span><input class="control" id="link" name="link" placeholder="/posts/… veya https://…"></label>
-            <label class="field"><span class="label">Düğme metni (Esperanto)</span><input class="control" id="link-label" name="link_label" maxlength="80" value="Malfermi"></label>
+            <label class="field"><span class="label">Düğme metni (Esperanto)</span><input class="control" id="link-label" name="link_label" data-maxchars="80" value="Malfermi"></label>
           </div>
           <div class="two-col" data-types="link" hidden>
-            <label class="field"><span class="label">Button label (English)</span><input class="control" name="link_label_en" maxlength="80" value="Open"></label>
-            <label class="field"><span class="label">Düğme metni (Türkçe)</span><input class="control" name="link_label_tr" maxlength="80" value="Aç"></label>
+            <label class="field"><span class="label">Button label (English)</span><input class="control" name="link_label_en" data-maxchars="80" value="Open"></label>
+            <label class="field"><span class="label">Düğme metni (Türkçe)</span><input class="control" name="link_label_tr" data-maxchars="80" value="Aç"></label>
           </div>
 
           <details>
             <summary>İsteğe bağlı alanlar</summary>
             <div class="two-col">
-              <label class="field"><span class="label-row"><span class="label">Kart başlığı</span><span class="optional">İsteğe bağlı</span></span><input class="control" id="title" name="title" maxlength="120" placeholder="Ana sayfadaki kısa başlık"></label>
-              <label class="field"><span class="label-row"><span class="label">Alt metin</span><span class="optional">İsteğe bağlı</span></span><input class="control" id="subtext" name="subtext" maxlength="1000" placeholder="Kısa bir açıklama"></label>
+              <label class="field"><span class="label-row"><span class="label">Kart başlığı</span><span class="optional">İsteğe bağlı</span></span><input class="control" id="title" name="title" data-maxchars="120" placeholder="Ana sayfadaki kısa başlık"></label>
+              <label class="field"><span class="label-row"><span class="label">Alt metin</span><span class="optional">İsteğe bağlı</span></span><input class="control" id="subtext" name="subtext" data-maxchars="1000" placeholder="Kısa bir açıklama"></label>
             </div>
             <div class="two-col">
-              <label class="field"><span class="label">Card title (English)</span><input class="control" name="title_en" maxlength="120"></label>
-              <label class="field"><span class="label">Subtitle (English)</span><input class="control" name="subtext_en" maxlength="1000"></label>
-              <label class="field"><span class="label">Kart başlığı (Türkçe)</span><input class="control" name="title_tr" maxlength="120"></label>
-              <label class="field"><span class="label">Alt metin (Türkçe)</span><input class="control" name="subtext_tr" maxlength="1000"></label>
+              <label class="field"><span class="label">Card title (English)</span><input class="control" name="title_en" data-maxchars="120"></label>
+              <label class="field"><span class="label">Subtitle (English)</span><input class="control" name="subtext_en" data-maxchars="1000"></label>
+              <label class="field"><span class="label">Kart başlığı (Türkçe)</span><input class="control" name="title_tr" data-maxchars="120"></label>
+              <label class="field"><span class="label">Alt metin (Türkçe)</span><input class="control" name="subtext_tr" data-maxchars="1000"></label>
             </div>
             <label class="field" data-types="text,link"><span class="label">Özel CSS arka planı</span><input class="control" id="bg" name="bg" maxlength="500" value="linear-gradient(160deg, #171824, #30215c)"></label>
           </details>
@@ -1391,8 +1404,10 @@ var adminPage = template.Must(template.New("admin").Parse(`<!doctype html>
         previewSubtext.hidden=!sub&&!!main;
         previewCTA.textContent=(labelField.value.trim()||adminT('Aç'))+' ↑';
         if(type!=='image') preview.style.background=bgInput.value||'linear-gradient(160deg, #171824, #30215c)';
-        document.getElementById('text-count').textContent=textInput.value.length;
+        document.getElementById('text-count').textContent=charCount(textInput.value);
+        form.querySelectorAll('[data-maxchars]').forEach(function(field){var max=+field.dataset.maxchars;field.setCustomValidity(charCount(field.value.trim())>max?'En fazla '+max+' karakter olabilir ('+charCount(field.value.trim())+').':'')});
       }
+      function charCount(value){return Array.from(value).length}
       function saveDraft(){
         var draft={type:currentType(),text:textInput.value,title:document.getElementById('title').value,subtext:subtextInput.value,link:linkInput.value,linkLabel:linkLabel.value,bg:bgInput.value};
         form.querySelectorAll('[name$="_en"],[name$="_tr"]').forEach(function(field){draft[field.name]=field.value});

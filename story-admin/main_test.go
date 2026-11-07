@@ -501,3 +501,32 @@ func TestCreatePostRejectsUnavailableInventory(t *testing.T) {
 		})
 	}
 }
+
+func TestStoryTextLimitsCountCharacters(t *testing.T) {
+	fields := []struct {
+		name string
+		max  int
+		set  func(*Story, string)
+	}{
+		{"text", 1000, func(s *Story, v string) { s.Text = v }},
+		{"title", 120, func(s *Story, v string) { s.Title = v }},
+		{"subtext", 1000, func(s *Story, v string) { s.Subtext = v }},
+		{"link_label", 80, func(s *Story, v string) { s.LinkLabel = v }},
+	}
+	for _, f := range fields {
+		for _, char := range []string{"a", "ş", "ĝ", "😀"} {
+			s := Story{Type: "text", Text: "x"}
+			f.set(&s, strings.Repeat(char, f.max))
+			if err := validate(s); err != nil {
+				t.Fatalf("%s: %d × %q rejected: %v", f.name, f.max, char, err)
+			}
+			f.set(&s, strings.Repeat(char, f.max+1))
+			if validate(s) == nil {
+				t.Fatalf("%s: %d × %q accepted", f.name, f.max+1, char)
+			}
+		}
+	}
+	if textLen("a\r\nb") != 3 || textLen("ş😀") != 2 {
+		t.Fatal("textLen must count code points and submitted CRLF as one newline")
+	}
+}
