@@ -1,22 +1,10 @@
 name: fmert-blog
 
 services:
-  blog:
+  stories:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile
-    image: fmert-blog:local
-    container_name: fmert_blog
-    restart: unless-stopped
-    ports: ["127.0.0.1:8080:8080"]
-    read_only: true
-    tmpfs: [/var/cache/nginx, /var/run, /tmp]
-    security_opt: [no-new-privileges:true]
-    cap_drop: [ALL]
-    cap_add: [CHOWN, SETGID, SETUID, NET_BIND_SERVICE]
-
-  stories:
-    build: ../story-admin
+      dockerfile: deploy/Dockerfile.admin
     image: fmert-story-admin:local
     container_name: fmert_story_admin
     restart: unless-stopped
@@ -24,18 +12,44 @@ services:
     environment:
       STORY_PASSWORD: ${STORY_PASSWORD:?set STORY_PASSWORD in .env}
       DATA_DIR: /data
+      SOURCE_DIR: /app
+      SITE_DIST_DIR: /srv/site
       # Caddy is the public entrypoint; this service is bound to loopback only.
       # Docker forwards its connections with a bridge address, not 127.0.0.1.
       TRUST_PROXY_HEADERS: "true"
-      BLOG_ORIGIN: http://blog:8080
-    volumes: [./data:/data]
+      COOKIE_SECURE: "auto"
+    volumes:
+      - ./data:/data
+      - site_dist:/srv/site
     read_only: true
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     healthcheck:
-      test: [CMD, /story-admin, healthcheck]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
-      start_period: 5s
+      start_period: 10s
       retries: 3
+
+  blog:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: fmert-blog:local
+    container_name: fmert_blog
+    restart: unless-stopped
+    depends_on:
+      stories:
+        condition: service_healthy
+    ports: ["127.0.0.1:8080:8080"]
+    volumes:
+      - site_dist:/srv/site:ro
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run, /tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, NET_BIND_SERVICE]
+
+volumes:
+  site_dist:

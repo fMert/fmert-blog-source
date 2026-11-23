@@ -29,10 +29,10 @@ docker compose --env-file deploy/.env -f deploy/docker-compose.yml build --pull
 docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --remove-orphans
 
 for _ in {1..30}; do
-  if healthy fmert_blog && healthy fmert_story_admin; then
+  if healthy fmert_blog && healthy fmert_story_admin &&
+     curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8080/ >/dev/null &&
+     curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8081/health >/dev/null; then
     printf '%s\n' "$REMOTE_REVISION" > "$APP_DIR/.deployed-revision"
-    curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null
-    curl --fail --silent --show-error http://127.0.0.1:8081/health >/dev/null
     exit 0
   fi
   sleep 2

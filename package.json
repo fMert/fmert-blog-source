@@ -1,0 +1,23 @@
+{
+  "name": "fmert-blog",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Personal multilingual blog, stories, and content studio for fmert.me",
+  "scripts": {
+    "build": "node src/builder/build.mjs",
+    "dev": "node src/server/dev.mjs",
+    "start": "node src/server/index.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "highlight.js": "^11.12.0",
+    "js-yaml": "^4.1.0",
+    "marked": "^18.2.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

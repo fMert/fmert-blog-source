@@ -1,12 +1,9 @@
 .git
+.github
 _site
-.jekyll-cache
-deploy/data/*
-!deploy/data/posts
-!deploy/data/posts/**
-deploy/data/posts/.publish-trigger
-deploy/data/posts/.publish-status
-deploy/data/posts/.publish-jobs
-deploy/data/posts/.publish-request-*
+node_modules
+tests
+deploy/data
 deploy/.env
 design_handoff_blog_stories
+*.log

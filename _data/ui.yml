@@ -1,108 +1,275 @@
 eo:
+  lang_code: eo
+  lang_name: Esperanto
   language_label: Lingvo
+  site_tagline: Persona programada kajero de fMert
+  nav_writing: Artikoloj
+  nav_archive: Arkivo
+  nav_about: Pri mi
+  nav_projects: Projektoj
   search: Serĉi
-  sidebar: Flanka menuo
-  profile_photo: Profilbildo
-  no_facebook: Ne serĉu min ĉe Facebook.
+  search_placeholder: Serĉi artikolojn, etikedojn aŭ temojn…
+  search_empty: Tajpu por serĉi artikolojn.
+  search_no_results: Neniu artikolo trovita.
+  search_close: Fermi serĉon
   theme_toggle: Ŝanĝi koloran etoson
+  skip_to_content: Salti al la enhavo
+  menu_toggle: Malfermi menuon
+  profile_photo: Profilbildo de Furkan Mert Bağcı
+  hero_bio: >-
+    Inĝenierarta studento en Aksaray. Mi skribas pri Linukso, libera programaro,
+    loka artefarita inteligenteco kaj propraj projektoj.
+  hero_building: Projektoj
+  no_facebook: Ne serĉu min ĉe Facebook.
   email: Retpoŝto
+  rss: RSS-fluo
   stories: Rakontoj
-  story_count: "{count} novaj · videblaj dum 24 horoj"
+  story_count_live: "{count} aktivaj dum 24 horoj"
+  story_count_archive: "Lasta rakonto"
   last_story: Lasta rakonto
   just_now: Ĵus
+  minutes_ago: "antaŭ {count} min"
   hours_ago: "antaŭ {count} h"
-  story_archive: ARKIVO
-  story_photo: FOTO
-  story_text: TEKSTO
-  story_link: ARTIKOLO
+  days_ago: "antaŭ {count} t"
+  story_archive: Arkivo
+  story_photo: Foto
+  story_text: Noto
+  story_link: Artikolo
   story_open: Malfermi
-  story_last_badge: LASTA RAKONTO
+  story_last_badge: Lasta rakonto
   story_previous: Antaŭa
   story_next: Sekva
   story_pause: Paŭzi
+  story_resume: Daŭrigi
   story_close: Fermi
   story_like: Ŝati la rakonton
+  writing_heading: Artikoloj
+  pinned_label: Alpinglita
+  read_time: "{count} min"
+  all_topics: Ĉiuj
+  archive_subtitle: Ĉiuj artikoloj laŭ jaro kaj temo.
+  category_heading: "Kategorio: {name}"
+  tag_heading: "Etikedo: #{name}"
+  posts_count: "{count} artikoloj"
+  post_count_one: "1 artikolo"
+  back_to_writing: Ĉiuj artikoloj
+  toc_heading: Enhavo
+  copy_code: Kopii
+  code_copied: Kopiita
+  previous_post: Antaŭa artikolo
+  next_post: Sekva artikolo
+  updated_label: Ĝisdatigita
   like: Ŝati
   liked: Ŝatita
   unlike: Malŝati
   like_count: "{count} ŝatoj"
-  like_notice: "Kun via ŝato, la posedanto de la retejo povas vidi vian IP-adreson, horon, paĝon, aparaton/retumilon kaj referencan retejon."
-  like_load_failed: Ne eblis ŝargi la nombron de ŝatoj.
-  like_saved: Via ŝato estas konservita.
-  like_removed: Via ŝato estas forigita.
+  like_notice: >-
+    Ŝatante enhavon, la posedanto povas vidi la horon, paĝon, aparaton/retumilon,
+    referencan retejon kaj IP-adreson de la peto.
+  like_load_failed: Ne eblis ŝargi ŝatojn.
+  like_saved: Ŝato konservita.
+  like_removed: Ŝato forigita.
   like_save_failed: Ne eblis konservi. Reprovu.
-  post_like: Ŝati la afiŝon
+  post_like: Ŝati la artikolon
+  not_found_title: Paĝo ne trovita
+  not_found_text: Ĉi tiu adreso ne ekzistas aŭ la paĝo moviĝis.
+  not_found_home: Reiri al la ĉefpaĝo
   reset_title: fmert.me rekomenciĝas
   reset_text: Malnova reteja kaŝmemoro estas forigata…
+  months:
+    - Jan
+    - Feb
+    - Mar
+    - Apr
+    - Maj
+    - Jun
+    - Jul
+    - Aŭg
+    - Sep
+    - Okt
+    - Nov
+    - Dec
+
 en:
+  lang_code: en
+  lang_name: English
   language_label: Language
+  site_tagline: Personal software notebook of fMert
+  nav_writing: Writing
+  nav_archive: Archive
+  nav_about: About
+  nav_projects: Projects
   search: Search
-  sidebar: Sidebar
-  profile_photo: Profile photo
+  search_placeholder: Search posts, tags, or topics…
+  search_empty: Type to search posts.
+  search_no_results: No matching posts.
+  search_close: Close search
+  theme_toggle: Switch color theme
+  skip_to_content: Skip to content
+  menu_toggle: Toggle menu
+  profile_photo: Profile photo of Furkan Mert Bağcı
+  hero_bio: >-
+    Engineering student in Aksaray writing about Linux, open source, local AI,
+    and small tools built for daily work.
+  hero_building: Projects
   no_facebook: You will not find me on Facebook.
-  theme_toggle: Change color theme
   email: Email
+  rss: RSS feed
   stories: Stories
-  story_count: "{count} new · visible for 24 hours"
+  story_count_live: "{count} live for 24 hours"
+  story_count_archive: "Latest story"
   last_story: Latest story
   just_now: Just now
-  hours_ago: "{count} h ago"
-  story_archive: ARCHIVE
-  story_photo: PHOTO
-  story_text: TEXT
-  story_link: ARTICLE
+  minutes_ago: "{count}m ago"
+  hours_ago: "{count}h ago"
+  days_ago: "{count}d ago"
+  story_archive: Archive
+  story_photo: Photo
+  story_text: Note
+  story_link: Article
   story_open: Open
-  story_last_badge: LATEST STORY
+  story_last_badge: Latest story
   story_previous: Previous
   story_next: Next
   story_pause: Pause
+  story_resume: Resume
   story_close: Close
   story_like: Like this story
+  writing_heading: Writing
+  pinned_label: Pinned
+  read_time: "{count} min"
+  all_topics: All
+  archive_subtitle: Every post organized by year and topic.
+  category_heading: "Category: {name}"
+  tag_heading: "Tag: #{name}"
+  posts_count: "{count} posts"
+  post_count_one: "1 post"
+  back_to_writing: All writing
+  toc_heading: Contents
+  copy_code: Copy
+  code_copied: Copied
+  previous_post: Previous post
+  next_post: Next post
+  updated_label: Updated
   like: Like
   liked: Liked
   unlike: Unlike
   like_count: "{count} likes"
-  like_notice: "When you like content, the site owner can see your IP address, time, page, device/browser, and referring site."
-  like_load_failed: Could not load the like count.
-  like_saved: Your like was saved.
-  like_removed: Your like was removed.
+  like_notice: >-
+    When you like content, the site owner can see the timestamp, page, device/browser,
+    referring site, and IP address of the request.
+  like_load_failed: Could not load likes.
+  like_saved: Like saved.
+  like_removed: Like removed.
   like_save_failed: Could not save. Try again.
   post_like: Like this post
+  not_found_title: Page not found
+  not_found_text: This address does not exist or the page has moved.
+  not_found_home: Back to home
   reset_title: Resetting fmert.me
   reset_text: Clearing the old site cache…
+  months:
+    - Jan
+    - Feb
+    - Mar
+    - Apr
+    - May
+    - Jun
+    - Jul
+    - Aug
+    - Sep
+    - Oct
+    - Nov
+    - Dec
+
 tr-TR:
+  lang_code: tr
+  lang_name: Türkçe
   language_label: Dil
+  site_tagline: fMert’in kişisel yazılım günlüğü
+  nav_writing: Yazılar
+  nav_archive: Arşiv
+  nav_about: Hakkında
+  nav_projects: Projeler
   search: Ara
-  sidebar: Kenar çubuğu
-  profile_photo: Profil fotoğrafı
-  no_facebook: Beni Facebook'ta bulamazsın.
+  search_placeholder: Yazı, etiket veya konu ara…
+  search_empty: Yazılarda aramak için yazmaya başlayın.
+  search_no_results: Eşleşen yazı bulunamadı.
+  search_close: Aramayı kapat
   theme_toggle: Renk temasını değiştir
+  skip_to_content: İçeriğe geç
+  menu_toggle: Menüyü aç
+  profile_photo: Furkan Mert Bağcı profil fotoğrafı
+  hero_bio: >-
+    Aksaray’da mühendislik öğrencisi. Linux, açık kaynak, yerel yapay zekâ ve
+    günlük işleri kolaylaştıran araçlar üzerine notlar.
+  hero_building: Projeler
+  no_facebook: Beni Facebook'ta bulamazsın.
   email: E-posta
+  rss: RSS akışı
   stories: Hikayeler
-  story_count: "{count} yeni · 24 saat görünür"
+  story_count_live: "{count} aktif, 24 saat görünür"
+  story_count_archive: "Son hikaye"
   last_story: Son hikaye
   just_now: Az önce
+  minutes_ago: "{count} dk önce"
   hours_ago: "{count} sa önce"
-  story_archive: ARŞİV
-  story_photo: FOTO
-  story_text: METİN
-  story_link: YAZI
+  days_ago: "{count} g önce"
+  story_archive: Arşiv
+  story_photo: Foto
+  story_text: Not
+  story_link: Yazı
   story_open: Aç
-  story_last_badge: SON HİKAYE
+  story_last_badge: Son hikaye
   story_previous: Önceki
   story_next: Sonraki
   story_pause: Duraklat
+  story_resume: Devam et
   story_close: Kapat
-  story_like: Hikâyeyi beğen
+  story_like: Hikayeyi beğen
+  writing_heading: Yazılar
+  pinned_label: Sabit
+  read_time: "{count} dk"
+  all_topics: Tümü
+  archive_subtitle: Yıla ve konuya göre tüm yazılar.
+  category_heading: "Kategori: {name}"
+  tag_heading: "Etiket: #{name}"
+  posts_count: "{count} yazı"
+  post_count_one: "1 yazı"
+  back_to_writing: Tüm yazılar
+  toc_heading: İçindekiler
+  copy_code: Kopyala
+  code_copied: Kopyalandı
+  previous_post: Önceki yazı
+  next_post: Sonraki yazı
+  updated_label: Güncellendi
   like: Beğen
   liked: Beğendin
   unlike: Beğeniyi geri al
   like_count: "{count} beğeni"
-  like_notice: "Beğeniyle birlikte IP, zaman, sayfa, cihaz/tarayıcı ve yönlendiren site bilgileri site sahibine görünür."
-  like_load_failed: Beğeni sayısı yüklenemedi.
-  like_saved: Beğenin kaydedildi.
-  like_removed: Beğenin geri alındı.
-  like_save_failed: Kaydedilemedi. Tekrar dene.
+  like_notice: >-
+    Beğendiğinizde isteğin zamanı, sayfası, cihaz/tarayıcı, yönlendiren site ve
+    IP bilgisi site sahibine görünür.
+  like_load_failed: Beğeniler yüklenemedi.
+  like_saved: Beğeni kaydedildi.
+  like_removed: Beğeni geri alındı.
+  like_save_failed: Kaydedilemedi. Tekrar deneyin.
   post_like: Yazıyı beğen
+  not_found_title: Sayfa bulunamadı
+  not_found_text: Bu adres mevcut değil veya sayfa taşınmış olabilir.
+  not_found_home: Ana sayfaya dön
   reset_title: fmert.me sıfırlanıyor
   reset_text: Eski site önbelleği temizleniyor…
+  months:
+    - Oca
+    - Şub
+    - Mar
+    - Nis
+    - May
+    - Haz
+    - Tem
+    - Ağu
+    - Eyl
+    - Eki
+    - Kas
+    - Ara

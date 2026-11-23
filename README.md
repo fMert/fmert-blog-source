@@ -1,116 +1,52 @@
 # fmert.me — Source Code
 
-This repository contains the source code and content for my already-live blog, **[fmert.me](https://fmert.me)**.
+Source code and content for **[fmert.me](https://fmert.me)**, the personal software journal of **Furkan Mert Bağcı (fMert)**.
 
-The production site is independently hosted and deployed on my personal VPS — **it is not hosted on GitHub Pages**. GitHub is used here for source control and build/test automation only.
+Self-hosted on a personal VPS behind Caddy and Docker Compose.
 
-Personal blog of **Furkan Mert Bağcı** — posts about my projects (Queyntisen, Aria), software, and the occasional field research. Built with [Jekyll](https://jekyllrb.com/) and the [Chirpy](https://github.com/cotes2020/jekyll-theme-chirpy) theme.
+## Architecture
 
-**Live site:** <https://fmert.me>
+- **Bespoke Editorial Frontend (`src/builder/`, `src/assets/`)** — Lightweight, dependency-minimal static site generator built on Node.js (`marked`, `gray-matter`, `highlight.js`, `js-yaml` — all MIT/BSD-3-Clause). Builds Esperanto (`/`), English (`/en/`), and Turkish (`/tr/`) in ~150 ms with build-time syntax highlighting, sticky table of contents, instant `⌘K` / `/` search, unified topic-filtered archives, Atom feeds, sitemap, and light/dark modes.
+- **Stories** — Homepage story strip with 24-hour active window, latest-story archive fallback, seen rings, and a 60fps darkroom fullscreen viewer with keyboard, tap, hold-to-pause, and swipe gestures.
+- **Content Studio & API (`src/server/`)** — Password-protected `/stories-admin` studio with:
+  - **Stories**: Create, edit, and delete text, image, or link stories with live 9:16 preview, Unicode code-point validation, strict image header verification, and automatic media + like cleanup.
+  - **Posts**: Create, edit, delete, and save server-side drafts (drafts never leak into live builds). Supports 1, 2, or all 3 languages, live Markdown preview, direct image upload into `/story-media/`, full-text metadata inference, and **instant atomic site rebuilds (~150 ms)** via symlinked releases — no Docker rebuilds or systemd path triggers required.
+  - **First-party Analytics & Likes**: Respects Do Not Track and Global Privacy Control. Stores 30-day rolling daily JSONL logs with automatic background pruning, 10 MiB daily / 100 MiB total storage caps, and persistent per-item like counts backed by signed HttpOnly cookies.
 
-## What's customized
+## Running Locally
 
-- **Violet reskin** — the entire theme is recolored through CSS custom properties in `assets/css/jekyll-theme-chirpy.scss`. Both light and dark modes work; the theme's own toggle is untouched.
-- **Three languages** — Esperanto is the default at `/`; English is at `/en/`, and Turkish is at `/tr/`. Flag-only switches appear at the top right. Posts, stories, the research page, and the content studio are translated.
-- **Stories** — an Instagram-style story row on the homepage with a fullscreen viewer (progress bars, auto-advance, tap zones, keyboard navigation). Vanilla JS, no dependencies.
-- **Content studio** — the password-protected `/stories-admin` panel has Stories, Posts, and Analytics tabs. New stories and posts require text in all three languages. Posts can be written in Markdown with a live preview; dates, slugs, categories, and tags are generated automatically without an external AI API.
-- **First-party analytics** — the Analytics tab shows the last 30 days of page views, distinct IPs, popular pages, device/browser categories, referrer domains, and recent visits. Data starts when the tracker is deployed; it is stored in the persistent `deploy/data/analytics/` directory and older daily files are removed when the dashboard is opened. Do Not Track and Global Privacy Control are respected. Counts exclude browsers that block or disable the tracker; IPs do not identify individuals.
-- **Likes** — stories and post pages have a like/unlike button and a public count. The Analytics tab shows every current like with its timestamp, content, IP, page, device/browser category, and referrer domain. These are snapshots of the like request, not a person's browsing history. Only the authenticated admin can see these details. Likes and their snapshots persist in `deploy/data/likes/` until undone; their retention is separate from the 30-day page-view window. A signed, first-party, HttpOnly cookie remembers likes for one year and is created on the first like. Clearing cookies or using another browser allows another like; this is not an identity system. The like button remains usable when passive analytics are disabled by DNT/GPC.
+Requires Node.js ≥ 20.
 
-The like service validates content against live stories and Jekyll's generated
-`/like-targets.json`. Rebuild both `blog` and `stories` containers to enable it.
-`BLOG_ORIGIN` defaults to the internal `http://blog:8080`; set it to your Jekyll
-server when running the Go service locally. The like cookie requires HTTPS.
-`TRUST_PROXY_HEADERS=true` is set only in the deployment where Caddy is the
-entrypoint and the Go service's published port is bound to loopback. Do not expose
-that port directly to the internet with this setting enabled.
-
-Abuse protection limits `/stories-login` to 5 attempts per IP and 100 attempts
-across all IPs per 15 minutes. Analytics submissions are limited to 60 per IP
-and 600 across all IPs per minute, and require a matching `Origin` header.
-Throttled requests return HTTP 429 with `Retry-After`. These request limits reset
-when the service restarts. Analytics log files have an additional 10 MiB daily
-and 100 MiB total storage budget, checked against the files on disk so restarting
-cannot bypass it. When a storage budget is full, new analytics submissions return
-HTTP 503 until space is available; existing records are not deleted by this check.
-Page-view counts can therefore omit traffic above these limits, and accepted
-requests are still not proof of a human visit.
-
-## Stories
-
-New stories are published from the Stories tab of the password-protected `/stories-admin` page.
-The companion service in `story-admin/` stores its JSON and uploads in the
-mounted `deploy/data/` directory; story content is therefore kept across image
-rebuilds and is never committed. Existing single-language stories stay available
-on the Turkish site. The Jekyll data below is an offline fallback, with English
-and Turkish copies in `i18n/`.
-
-Fallback stories live in [`_data/stories.yml`](_data/stories.yml). Their format is:
-
-```yaml
-- id: my-story            # unique, used for seen-state
-  type: image             # image | text | link
-  image: /assets/img/example.jpg   # type: image
-  bg: "linear-gradient(...)"       # type: text | link
-  title: "Short card caption"      # optional, falls back to text
-  text: "Main story text"
-  subtext: "Smaller line below"    # optional
-  link: /posts/some-post/          # type: link
-  link_label: "Yazıyı oku"         # type: link
-  posted: 2026-07-11 18:00:00 +0300
+```bash
+npm install
+npm run dev        # builds site + runs static files & /stories-admin at http://127.0.0.1:4000
 ```
 
-Rules enforced client-side in `assets/js/stories.js`:
+Default local admin password is `dev` (override with `STORY_PASSWORD=...`).
 
-- A story is visible for **24 hours** after `posted`.
-- When nothing is fresh, only the newest story stays, shown dimmed as **"Son hikaye"** — until a newer one is published.
-- Viewed stories get a grey ring, persisted in `localStorage`.
-- No live or fallback stories hides the section entirely.
+### Build & Test
 
-Implementation: `_includes/stories.html` (markup), `assets/js/stories.js` (logic), the `/* ----- Stories ----- */` section of `assets/css/jekyll-theme-chirpy.scss` (styles), and `_layouts/home.html` (Chirpy home layout override that inserts the row above the post list).
+```bash
+npm run build      # outputs static multilingual site to _site/
+npm test           # runs static builder, internal link integrity, and backend integration tests
+```
 
-The production Docker and Caddy configuration lives in `deploy/`. Create
-`deploy/.env` containing `STORY_PASSWORD=...`, then run:
+## Production Deployment
+
+Production runs two hardened Docker containers defined in `deploy/docker-compose.yml`:
+
+- `fmert_story_admin` (`127.0.0.1:8081`): Node.js 22 Alpine server handling `/stories-*`, `/story-media/*`, `/health`, and atomic static site builds into the shared `site_dist` volume.
+- `fmert_blog` (`127.0.0.1:8080`): Nginx serving `/srv/site/current` read-only from the shared volume.
+
+Create `deploy/.env` with `STORY_PASSWORD=...`, then run:
 
 ```bash
 cd deploy
 docker compose up -d --build
 ```
 
-> Note: story images are CSS backgrounds rather than `<img>` tags, because Chirpy's `refactor-content.html` rewrites raw `<img>` markup in layout content.
-
-## Publishing posts from the admin
-
-The Posts tab in `/stories-admin` saves Markdown drafts in the browser and
-publishes completed posts into the persistent, Git-ignored
-`deploy/data/posts/{eo,en,tr}/` directories. Existing single-language posts in
-`deploy/data/posts/` remain on the Turkish site. The production path unit watches for new posts
-and runs `deploy/publish-posts.sh`, which rebuilds only the blog container,
-checks the new post URL, and keeps the previous image available for rollback.
-Panel-created posts therefore survive regular Git deployments without being
-committed to the repository.
-
-## Running locally
-
-```bash
-bundle install
-bash tools/run.sh          # builds all languages and serves at http://127.0.0.1:4000
-```
-
-Or a one-off production build:
-
-```bash
-JEKYLL_ENV=production bash tools/build-languages.sh   # output in _site/
-```
-
-Requires Ruby ≥ 3.1.
-
-## Deployment
-
-Pushing to `main` runs the build checks. The VPS timer pulls `main` and runs
-`deploy/update-blog.sh`; Caddy routes the static blog and content studio. Post
-publishing is handled separately by `fmert-blog-post-publish.path`.
+Caddy routes `/stories-*` and `/story-media/*` to `localhost:8081` and all other requests to `localhost:8080`. Persistent stories, media, posts, drafts, likes, and analytics remain stored in `deploy/data/`.
 
 ## License
 
-The source code is open source under the [MIT License](LICENSE). Blog content © Furkan Mert Bağcı. The project is based on the MIT-licensed [Chirpy starter](https://github.com/cotes2020/chirpy-starter).
+Source code is licensed under the [MIT License](LICENSE). Blog content © Furkan Mert Bağcı.
